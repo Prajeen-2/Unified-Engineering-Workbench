@@ -176,3 +176,4 @@ nlohmann::json HardwareManager::getSystemElectricalArchitecture() {
 }
 
 } // namespace workbench::hardware
+

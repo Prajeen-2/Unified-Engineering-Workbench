@@ -52,6 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (targetModule === 'hardware' && window.hardwareIntegration) {
             window.hardwareIntegration.resizeCharts();
         }
+        if (targetModule === 'neural' && window.neuralLab) {
+            window.neuralLab.resizeCharts();
+        }
     };
 
     navItems.forEach(item => {

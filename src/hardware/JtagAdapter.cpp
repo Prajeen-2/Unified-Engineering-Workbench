@@ -138,3 +138,4 @@ bool JtagAdapter::recoverFault() {
 }
 
 } // namespace workbench::hardware
+

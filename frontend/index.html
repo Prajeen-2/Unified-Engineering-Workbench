@@ -1300,23 +1300,327 @@
                 </div>
             </section>
 
-            <!-- 6. NEURAL NETWORK LAB VIEW (Task F Shell) -->
+            <!-- 6. NEURAL NETWORK LAB VIEW (Task F) -->
             <section class="view-panel" id="view-neural">
+                <!-- Header Banner Card -->
+                <div class="card" style="margin-bottom: 16px;">
+                    <div class="card-header">
+                        <span class="card-title">Manual Analytical Backpropagation & Gradient Verification Lab</span>
+                        <span class="metric-pill pill-cyan">Zero Autograd &bull; Pure C++17 Analytical</span>
+                    </div>
+                    <p style="color: var(--text-secondary); margin-bottom: 12px; font-size: 12px;">
+                        One-sample scalar regression ($x = 1.0, y = 2.0$) implementing manual chain-rule backward propagation without automatic differentiation frameworks, two-sided central finite-difference gradient checking, simultaneous parameter updates, and 100-step convergence tracking.
+                    </p>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <span class="metric-pill pill-blue">Forward: z = w&middot;x + b</span>
+                        <span class="metric-pill pill-blue">Activation: h = tanh(z)</span>
+                        <span class="metric-pill pill-blue">Output: &#375; = v&middot;h + c</span>
+                        <span class="metric-pill pill-amber">Objective: J = &frac12;(&#375; &minus; y)&sup2;</span>
+                        <span class="metric-pill pill-green">Grad Check: Central Diff &epsilon; = 10&minus;6 (Tol &le; 10&minus;5)</span>
+                    </div>
+                </div>
+
+                <!-- 2-Col Grid: Controls & Verification Summary -->
+                <div class="chart-container-2col">
+                    <!-- Hyperparameters & Training Controls -->
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">Hyperparameters & Training Controls</span>
+                            <span class="metric-pill pill-blue">&eta; = 0.1 &bull; 100 Steps</span>
+                        </div>
+                        <p style="color: var(--text-secondary); margin-bottom: 12px; font-size: 12px;">
+                            Configure training inputs, initial parameter values &theta;<sub>0</sub> = [w<sub>0</sub>, b<sub>0</sub>, v<sub>0</sub>, c<sub>0</sub>]<sup>T</sup>, learning rate, and finite-difference checking parameters.
+                        </p>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="param-input-group">
+                                <label for="neural-input-x">Input (x) <span>Scalar Feature</span></label>
+                                <input type="number" id="neural-input-x" value="1.0" step="0.1">
+                            </div>
+                            <div class="param-input-group">
+                                <label for="neural-input-y">Target (y) <span>Ground Truth</span></label>
+                                <input type="number" id="neural-input-y" value="2.0" step="0.1">
+                            </div>
+                            <div class="param-input-group">
+                                <label for="neural-input-w">Hidden Weight w&#8320; <span>Initial</span></label>
+                                <input type="number" id="neural-input-w" value="0.5" step="0.05">
+                            </div>
+                            <div class="param-input-group">
+                                <label for="neural-input-b">Hidden Bias b&#8320; <span>Initial</span></label>
+                                <input type="number" id="neural-input-b" value="0.0" step="0.05">
+                            </div>
+                            <div class="param-input-group">
+                                <label for="neural-input-v">Output Weight v&#8320; <span>Initial</span></label>
+                                <input type="number" id="neural-input-v" value="1.0" step="0.05">
+                            </div>
+                            <div class="param-input-group">
+                                <label for="neural-input-c">Output Bias c&#8320; <span>Initial</span></label>
+                                <input type="number" id="neural-input-c" value="0.0" step="0.05">
+                            </div>
+                            <div class="param-input-group">
+                                <label for="neural-input-lr">Learning Rate &eta; <span>Step Size</span></label>
+                                <input type="number" id="neural-input-lr" value="0.1" step="0.01" min="0.001" max="1.0">
+                            </div>
+                            <div class="param-input-group">
+                                <label for="neural-input-steps">Training Steps <span>Iterations</span></label>
+                                <input type="number" id="neural-input-steps" value="100" min="10" max="2000" step="10">
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                            <div class="param-input-group">
+                                <label for="neural-input-eps">Finite Diff &epsilon; <span>Central Step</span></label>
+                                <input type="number" id="neural-input-eps" value="0.000001" step="0.0000001">
+                            </div>
+                            <div class="param-input-group">
+                                <label for="neural-input-tol">Max Tolerance <span>Check Gate</span></label>
+                                <input type="number" id="neural-input-tol" value="0.00001" step="0.000001">
+                            </div>
+                        </div>
+
+                        <div class="btn-group-row" style="margin-top: 14px;">
+                            <button class="btn-primary" id="btn-run-neural-train">
+                                <span id="neural-btn-label">Run 100-Step Training</span>
+                            </button>
+                            <button class="btn-control" id="btn-run-neural-check">Check Gradients</button>
+                            <button class="btn-control" id="btn-reset-neural">Reset Defaults</button>
+                            <button class="btn-control" id="btn-export-neural-csv">Export CSV Log</button>
+                        </div>
+
+                        <div id="neural-status-text" style="font-size: 11px; color: var(--text-secondary); margin-top: 10px;">
+                            Ready. Click "Run 100-Step Training" to compute forward pass, analytical backprop, and gradient checks.
+                        </div>
+                        <div class="progress-bar-container" id="neural-progress-container">
+                            <div class="progress-bar-fill" id="neural-progress-bar"></div>
+                        </div>
+                    </div>
+
+                    <!-- Training & Verification Summary Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">Training & Numerical Verification Status</span>
+                            <span class="metric-pill pill-success" id="neural-kpi-verification">Ready</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 6px;">
+                            <div class="hw-stat-item">
+                                <span class="hw-stat-label">Initial Loss (J<sub>0</sub>)</span>
+                                <span class="hw-stat-val" id="neural-kpi-init-loss" style="color: var(--accent-amber);">--</span>
+                            </div>
+                            <div class="hw-stat-item">
+                                <span class="hw-stat-label">Final Loss (J<sub>100</sub>)</span>
+                                <span class="hw-stat-val" id="neural-kpi-final-loss" style="color: var(--accent-green);">--</span>
+                            </div>
+                            <div class="hw-stat-item">
+                                <span class="hw-stat-label">Output Evolution (&#375;<sub>0</sub> &rarr; &#375;<sub>100</sub>)</span>
+                                <span class="hw-stat-val" id="neural-kpi-yhat" style="color: var(--accent-cyan); font-size: 13px;">-- &rarr; --</span>
+                            </div>
+                            <div class="hw-stat-item">
+                                <span class="hw-stat-label">Peak Gradient Error</span>
+                                <span class="hw-stat-val" id="neural-kpi-max-error" style="color: var(--accent-blue);">--</span>
+                            </div>
+                        </div>
+
+                        <!-- Step 0 Detailed Gradient Table -->
+                        <div style="margin-top: 14px;">
+                            <div style="font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 6px;">
+                                Step 0 Gradient Check: Analytical vs Two-Sided Finite-Difference (&epsilon; = 10<sup>&minus;6</sup>)
+                            </div>
+                            <table class="data-table" style="font-size: 11px;">
+                                <thead>
+                                    <tr>
+                                        <th>Param</th>
+                                        <th>Analytical &part;J/&part;&theta;</th>
+                                        <th>Finite Diff (2&epsilon;)</th>
+                                        <th>Discrepancy</th>
+                                        <th>Check</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="neural-grad-table-body">
+                                    <tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Run training or gradient check to display results.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2-Col Grid: Loss Curve & Parameter Trajectories -->
+                <div class="chart-container-2col">
+                    <div class="chart-card">
+                        <div id="plot-neural-loss" class="plotly-chart"></div>
+                    </div>
+                    <div class="chart-card">
+                        <div id="plot-neural-params" class="plotly-chart"></div>
+                    </div>
+                </div>
+
+                <!-- Gradient Verification Discrepancy Chart -->
+                <div class="card" style="margin-bottom: 16px;">
+                    <div class="card-header">
+                        <span class="card-title">Gradient Checking Error Distribution across Training Iterations</span>
+                        <span class="metric-pill pill-green">Requirement: Error &le; 1.0 &times; 10&minus;5</span>
+                    </div>
+                    <div id="plot-neural-grad-error" class="plotly-chart" style="height: 250px;"></div>
+                </div>
+
+                <!-- 100-Step Training Step History Table -->
+                <div class="card" style="margin-bottom: 16px;">
+                    <div class="card-header">
+                        <span class="card-title">Simultaneous Gradient Descent Training Step Matrix (100 Iterations)</span>
+                        <span class="metric-pill pill-cyan">Deterministic Trajectory</span>
+                    </div>
+                    <div class="data-table-scrollable" style="max-height: 320px;">
+                        <table class="data-table" style="font-size: 11px;">
+                            <thead>
+                                <tr>
+                                    <th>Step</th>
+                                    <th>w</th>
+                                    <th>b</th>
+                                    <th>v</th>
+                                    <th>c</th>
+                                    <th>z</th>
+                                    <th>h</th>
+                                    <th>&#375;</th>
+                                    <th>Error (e)</th>
+                                    <th>Loss (J)</th>
+                                    <th>&part;J/&part;w</th>
+                                    <th>&part;J/&part;b</th>
+                                    <th>&part;J/&part;v</th>
+                                    <th>&part;J/&part;c</th>
+                                    <th>Max Grad Error</th>
+                                    <th>Check</th>
+                                </tr>
+                            </thead>
+                            <tbody id="neural-step-table-body">
+                                <tr><td colspan="16" style="text-align:center; color:var(--text-muted); padding: 24px;">Run training to populate step records.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Mathematical Derivation & Engineering Documentation Tabs -->
                 <div class="card">
                     <div class="card-header">
-                        <span class="card-title">Analytical Backpropagation & Gradient Verification</span>
-                        <span class="metric-pill pill-pending">Milestone F Target</span>
+                        <span class="card-title">Mathematical Derivation: Manual Chain-Rule Backpropagation & Error Bounds</span>
+                        <span class="metric-pill pill-blue">First-Principles Derivation</span>
                     </div>
-                    <p style="color: var(--text-secondary); margin-bottom: 12px;">
-                        Exact manual chain-rule derivative implementation without external autograd libraries.
-                    </p>
-                    <div class="metric-row">
-                        <span class="metric-label">Regression Network</span>
-                        <span class="metric-value">h = tanh(w*x + b), y_hat = v*h + c, Loss = 0.5*(y_hat - y)^2</span>
+
+                    <div class="tabs-header">
+                        <button class="tab-btn active" data-tab="tab-neural-deriv-forward">1. Forward Equations</button>
+                        <button class="tab-btn" data-tab="tab-neural-deriv-backward">2. Exact Chain-Rule Derivation</button>
+                        <button class="tab-btn" data-tab="tab-neural-deriv-check">3. Central Finite Differences</button>
+                        <button class="tab-btn" data-tab="tab-neural-deriv-step0">4. Step 0 Benchmark Calculation</button>
                     </div>
-                    <div class="metric-row">
-                        <span class="metric-label">Numerical Gradient Check</span>
-                        <span class="metric-value">Central finite-difference check: Error &le; 1e-5 (epsilon = 1e-6)</span>
+
+                    <!-- Tab 1: Forward Equations -->
+                    <div class="tab-content active" id="tab-neural-deriv-forward">
+                        <div style="line-height: 1.8; font-size: 12px; color: var(--text-secondary);">
+                            <h4 style="color: var(--text-primary); margin-bottom: 8px;">Network Architecture Specification</h4>
+                            <p>
+                                Consider a one-sample scalar regression neural network operating on training instance $(x = 1.0, y = 2.0)$ with one scalar input, one hidden neuron with hyperbolic tangent activation $\tanh$, and a linear output neuron with additive bias.
+                            </p>
+                            <div style="background-color: #0b0f17; padding: 12px 16px; border-radius: 6px; border: 1px solid var(--border-subtle); margin: 10px 0; font-family: var(--font-mono); color: var(--accent-cyan);">
+                                1. Pre-activation (Linear Hidden):&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;z = w &middot; x + b<br>
+                                2. Hidden Activation:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;h = tanh(z) = (e^z - e^-z) / (e^z + e^-z)<br>
+                                3. Output Prediction (Linear Output):&nbsp;&nbsp;&nbsp;&#375; = v &middot; h + c<br>
+                                4. Error Residual:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;e = &#375; &minus; y<br>
+                                5. Objective (Half MSE Loss):&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;J(&theta;) = &frac12; (&#375; &minus; y)&sup2; = &frac12; e&sup2;
+                            </div>
+                            <p>
+                                The trainable parameter vector is $\boldsymbol{\theta} = [w, b, v, c]^T \in \mathbb{R}^4$. The factor of $\frac{1}{2}$ cancels cleanly when taking the derivative with respect to $\hat{y}$: $\frac{\partial J}{\partial \hat{y}} = \hat{y} - y = e$.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Tab 2: Exact Chain-Rule Derivation -->
+                    <div class="tab-content" id="tab-neural-deriv-backward">
+                        <div style="line-height: 1.8; font-size: 12px; color: var(--text-secondary);">
+                            <h4 style="color: var(--text-primary); margin-bottom: 8px;">Exact Manual Chain-Rule Gradients</h4>
+                            <p>
+                                Applying the multivariable chain rule from the scalar objective $J$ backward through each computational node:
+                            </p>
+                            <div style="background-color: #0b0f17; padding: 12px 16px; border-radius: 6px; border: 1px solid var(--border-subtle); margin: 10px 0; font-family: var(--font-mono); color: var(--text-primary);">
+                                <span style="color: var(--accent-amber); font-weight: 700;">Output Layer Gradients:</span><br>
+                                &bull; &part;J / &part;&#375; = &#375; &minus; y = e<br>
+                                &bull; <strong>&part;J / &part;c</strong> = (&part;J / &part;&#375;) &middot; (&part;&#375; / &part;c) = e &middot; 1 = <span style="color: var(--accent-cyan);">e</span><br>
+                                &bull; <strong>&part;J / &part;v</strong> = (&part;J / &part;&#375;) &middot; (&part;&#375; / &part;v) = e &middot; h = <span style="color: var(--accent-cyan);">e &middot; h</span><br><br>
+                                <span style="color: var(--accent-amber); font-weight: 700;">Hidden Layer Error Backpropagation:</span><br>
+                                &bull; &part;J / &part;h = (&part;J / &part;&#375;) &middot; (&part;&#375; / &part;h) = e &middot; v<br>
+                                &bull; Hidden activation derivative: dh/dz = d/dz [tanh(z)] = 1 &minus; tanh&sup2;(z) = 1 &minus; h&sup2;<br>
+                                &bull; Local delta: &delta; &equiv; &part;J / &part;z = (&part;J / &part;h) &middot; (dh / dz) = <span style="color: var(--accent-cyan);">(e &middot; v) &middot; (1 &minus; h&sup2;)</span><br><br>
+                                <span style="color: var(--accent-amber); font-weight: 700;">Input/Hidden Parameter Gradients:</span><br>
+                                &bull; <strong>&part;J / &part;w</strong> = (&part;J / &part;z) &middot; (&part;z / &part;w) = &delta; &middot; x = <span style="color: var(--accent-cyan);">&delta; &middot; x</span><br>
+                                &bull; <strong>&part;J / &part;b</strong> = (&part;J / &part;z) &middot; (&part;z / &part;b) = &delta; &middot; 1 = <span style="color: var(--accent-cyan);">&delta;</span>
+                            </div>
+                            <h4 style="color: var(--text-primary); margin: 10px 0 6px 0;">Simultaneous Gradient Descent Update</h4>
+                            <p>
+                                At iteration $t$, parameters are updated simultaneously using learning rate $\eta$:
+                                <br>
+                                <code style="color: var(--accent-cyan);">w &larr; w &minus; &eta;&middot;(&part;J/&part;w),&nbsp;&nbsp;b &larr; b &minus; &eta;&middot;(&part;J/&part;b),&nbsp;&nbsp;v &larr; v &minus; &eta;&middot;(&part;J/&part;v),&nbsp;&nbsp;c &larr; c &minus; &eta;&middot;(&part;J/&part;c)</code>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Tab 3: Central Finite Differences -->
+                    <div class="tab-content" id="tab-neural-deriv-check">
+                        <div style="line-height: 1.8; font-size: 12px; color: var(--text-secondary);">
+                            <h4 style="color: var(--text-primary); margin-bottom: 8px;">Two-Sided Central Difference Gradient Checking</h4>
+                            <p>
+                                To formally prove that our manual C++ analytical chain-rule derivatives are exact and free of human derivation error, we verify each parameter derivative against a symmetric two-sided central finite difference quotient:
+                            </p>
+                            <div style="background-color: #0b0f17; padding: 12px 16px; border-radius: 6px; border: 1px solid var(--border-subtle); margin: 10px 0; font-family: var(--font-mono); color: var(--accent-cyan);">
+                                g_numerical(&theta;_i) = [ J(&theta; + &epsilon;&middot;e_i) &minus; J(&theta; &minus; &epsilon;&middot;e_i) ] / (2 &middot; &epsilon;)
+                            </div>
+                            <h4 style="color: var(--text-primary); margin-bottom: 6px;">Truncation Error & Taylor Expansion</h4>
+                            <p>
+                                By expanding the loss function $J(\theta)$ in a Taylor series around $\theta_i$:
+                                <br>
+                                $J(\theta + \epsilon) = J(\theta) + \epsilon J'(\theta) + \frac{\epsilon^2}{2} J''(\theta) + \frac{\epsilon^3}{6} J'''(\theta) + O(\epsilon^4)$
+                                <br>
+                                $J(\theta - \epsilon) = J(\theta) - \epsilon J'(\theta) + \frac{\epsilon^2}{2} J''(\theta) - \frac{\epsilon^3}{6} J'''(\theta) + O(\epsilon^4)$
+                                <br>
+                                Subtracting the two expansions cancels all even-order terms (including $\frac{\epsilon^2}{2} J''(\theta)$):
+                                <br>
+                                $J(\theta + \epsilon) - J(\theta - \epsilon) = 2\epsilon J'(\theta) + \frac{\epsilon^3}{3} J'''(\theta) + O(\epsilon^5)$
+                                <br>
+                                Dividing by $2\epsilon$ yields:
+                                <br>
+                                $\frac{J(\theta + \epsilon) - J(\theta - \epsilon)}{2\epsilon} = J'(\theta) + \frac{\epsilon^2}{6} J'''(\theta) + O(\epsilon^4)$
+                            </p>
+                            <p style="margin-top: 8px;">
+                                The leading truncation error is strictly $O(\epsilon^2)$. For perturbation $\epsilon = 1.0 \times 10^{-6}$, the truncation error is on the order of $(\epsilon^2)/6 \approx 1.67 \times 10^{-13}$. Under IEEE-754 double precision ($\approx 1.1 \times 10^{-16}$), roundoff error is well controlled, guaranteeing numerical discrepancies $\sim 10^{-10}$, safely within the required gate $\le 1.0 \times 10^{-5}$.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Tab 4: Step 0 Benchmark -->
+                    <div class="tab-content" id="tab-neural-deriv-step0">
+                        <div style="line-height: 1.8; font-size: 12px; color: var(--text-secondary);">
+                            <h4 style="color: var(--text-primary); margin-bottom: 8px;">Step 0 Analytical Ground-Truth Benchmark</h4>
+                            <p>
+                                Given $x = 1.0, y = 2.0, w = 0.5, b = 0.0, v = 1.0, c = 0.0$:
+                            </p>
+                            <table class="data-table" style="font-size: 12px; margin: 10px 0;">
+                                <thead>
+                                    <tr>
+                                        <th>Quantity</th>
+                                        <th>Exact Formula</th>
+                                        <th>Calculated Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>Pre-activation $z$</td><td>$w \cdot x + b = 0.5 \cdot 1.0 + 0.0$</td><td style="font-family: var(--font-mono); color: var(--accent-cyan);">0.500000000</td></tr>
+                                    <tr><td>Activation $h$</td><td>$\tanh(0.5) = (e^{0.5}-e^{-0.5})/(e^{0.5}+e^{-0.5})$</td><td style="font-family: var(--font-mono); color: var(--accent-cyan);">0.462117157</td></tr>
+                                    <tr><td>Prediction $\hat{y}$</td><td>$v \cdot h + c = 1.0 \cdot 0.462117 + 0.0$</td><td style="font-family: var(--font-mono); color: var(--accent-cyan);">0.462117157</td></tr>
+                                    <tr><td>Residual $e$</td><td>$\hat{y} - y = 0.462117 - 2.0$</td><td style="font-family: var(--font-mono); color: var(--accent-amber);">-1.537882843</td></tr>
+                                    <tr><td>Half MSE Loss $J$</td><td>$\frac{1}{2} e^2 = 0.5 \cdot (-1.537882843)^2$</td><td style="font-family: var(--font-mono); color: var(--accent-amber);">1.182541818</td></tr>
+                                    <tr><td>$\partial J / \partial v$</td><td>$e \cdot h = -1.537882843 \cdot 0.462117157$</td><td style="font-family: var(--font-mono); color: var(--accent-green);">-0.710682245</td></tr>
+                                    <tr><td>$\partial J / \partial c$</td><td>$e = -1.537882843$</td><td style="font-family: var(--font-mono); color: var(--accent-green);">-1.537882843</td></tr>
+                                    <tr><td>Backprop $\delta$</td><td>$e \cdot v \cdot (1 - h^2) = -1.537883 \cdot 1.0 \cdot (1 - 0.462117^2)$</td><td style="font-family: var(--font-mono); color: var(--accent-green);">-1.209464455</td></tr>
+                                    <tr><td>$\partial J / \partial w$</td><td>$\delta \cdot x = -1.209464455 \cdot 1.0$</td><td style="font-family: var(--font-mono); color: var(--accent-green);">-1.209464455</td></tr>
+                                    <tr><td>$\partial J / \partial b$</td><td>$\delta \cdot 1 = -1.209464455$</td><td style="font-family: var(--font-mono); color: var(--accent-green);">-1.209464455</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -1371,6 +1675,7 @@
     <script src="js/thermal_analysis.js"></script>
     <script src="js/performance_lab.js"></script>
     <script src="js/hardware_integration.js"></script>
+    <script src="js/neural_lab.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

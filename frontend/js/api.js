@@ -118,6 +118,36 @@ class WorkbenchApi {
             body: JSON.stringify({ device_id: deviceId })
         });
     }
+
+    // Neural Network Lab API Endpoints (Task F)
+    async trainNeuralNetwork(config = {}) {
+        return this.request('/api/neural/train', {
+            method: 'POST',
+            body: JSON.stringify(config)
+        });
+    }
+
+    async checkNeuralGradients(config = {}) {
+        return this.request('/api/neural/gradient-check', {
+            method: 'POST',
+            body: JSON.stringify(config)
+        });
+    }
+
+    getNeuralExportCsvUrl(config = {}) {
+        const params = new URLSearchParams();
+        if (config.x !== undefined) params.set('x', config.x);
+        if (config.y !== undefined) params.set('y', config.y);
+        if (config.initial_parameters?.w !== undefined) params.set('w', config.initial_parameters.w);
+        if (config.initial_parameters?.b !== undefined) params.set('b', config.initial_parameters.b);
+        if (config.initial_parameters?.v !== undefined) params.set('v', config.initial_parameters.v);
+        if (config.initial_parameters?.c !== undefined) params.set('c', config.initial_parameters.c);
+        if (config.learning_rate !== undefined) params.set('lr', config.learning_rate);
+        if (config.num_steps !== undefined) params.set('steps', config.num_steps);
+        if (config.epsilon !== undefined) params.set('eps', config.epsilon);
+        if (config.max_tolerance !== undefined) params.set('tol', config.max_tolerance);
+        return `${this.baseUrl}/api/neural/export-csv?${params.toString()}`;
+    }
 }
 
 window.api = new WorkbenchApi();

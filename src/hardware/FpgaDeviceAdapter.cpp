@@ -124,3 +124,4 @@ bool FpgaDeviceAdapter::recoverFault() {
 }
 
 } // namespace workbench::hardware
+

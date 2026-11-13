@@ -127,3 +127,4 @@ bool McuDeviceAdapter::recoverFault() {
 }
 
 } // namespace workbench::hardware
+

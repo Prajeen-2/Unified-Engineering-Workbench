@@ -14,6 +14,7 @@
 #include "performance/ThreadPool.hpp"
 #include "performance/PerformanceBenchmark.hpp"
 #include "hardware/HardwareManager.hpp"
+#include "neural/NeuralNetRegression.hpp"
 #include "httplib/httplib.h"
 #include "nlohmann/json.hpp"
 #include <filesystem>
@@ -409,6 +410,103 @@ void HttpServer::setupRoutes() {
             {"message", ok ? "Fault recovered successfully. Device operational." : "Recovery failed (device not in fault state)."}
         };
         res.set_content(response.dump(2), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
+    });
+
+    // Neural Network Lab Training endpoint
+    m_server->Post("/api/neural/train", [](const httplib::Request& req, httplib::Response& res) {
+        neural::TrainingConfig config;
+        if (!req.body.empty()) {
+            try {
+                auto j = nlohmann::json::parse(req.body);
+                config = neural::TrainingConfig::fromJson(j);
+            } catch (const std::exception& e) {
+                nlohmann::json errRes = {
+                    {"success", false},
+                    {"error_message", std::string("Malformed JSON payload: ") + e.what()}
+                };
+                res.set_content(errRes.dump(2), "application/json");
+                res.set_header("Access-Control-Allow-Origin", "*");
+                return;
+            }
+        }
+
+        std::string valErr;
+        if (!config.validate(valErr)) {
+            nlohmann::json errRes = {
+                {"success", false},
+                {"error_message", valErr}
+            };
+            res.set_content(errRes.dump(2), "application/json");
+            res.set_header("Access-Control-Allow-Origin", "*");
+            return;
+        }
+
+        core::Logger::instance().info("Running Neural Backprop Training for " + std::to_string(config.numSteps) + " steps");
+        auto result = neural::NeuralNetRegression::train(config);
+        res.set_content(result.toJson().dump(2), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
+    });
+
+    // Neural Network Lab Gradient Check endpoint
+    m_server->Post("/api/neural/gradient-check", [](const httplib::Request& req, httplib::Response& res) {
+        double x = 1.0;
+        double y = 2.0;
+        neural::NetworkParameters params{0.5, 0.0, 1.0, 0.0};
+        double epsilon = 1.0e-6;
+        double maxTolerance = 1.0e-5;
+
+        if (!req.body.empty()) {
+            try {
+                auto j = nlohmann::json::parse(req.body);
+                if (j.contains("x")) x = j["x"].get<double>();
+                if (j.contains("y")) y = j["y"].get<double>();
+                if (j.contains("epsilon")) epsilon = j["epsilon"].get<double>();
+                if (j.contains("max_tolerance")) maxTolerance = j["max_tolerance"].get<double>();
+                if (j.contains("parameters")) {
+                    const auto& p = j["parameters"];
+                    if (p.contains("w")) params.w = p["w"].get<double>();
+                    if (p.contains("b")) params.b = p["b"].get<double>();
+                    if (p.contains("v")) params.v = p["v"].get<double>();
+                    if (p.contains("c")) params.c = p["c"].get<double>();
+                }
+            } catch (const std::exception& e) {
+                nlohmann::json errRes = {
+                    {"success", false},
+                    {"error_message", std::string("Malformed JSON payload: ") + e.what()}
+                };
+                res.set_content(errRes.dump(2), "application/json");
+                res.set_header("Access-Control-Allow-Origin", "*");
+                return;
+            }
+        }
+
+        auto check = neural::NeuralNetRegression::checkGradients(x, y, params, epsilon, maxTolerance);
+        nlohmann::json response = {
+            {"success", true},
+            {"gradient_check", check.toJson()}
+        };
+        res.set_content(response.dump(2), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
+    });
+
+    // Neural Network Lab CSV Export endpoint
+    m_server->Get("/api/neural/export-csv", [](const httplib::Request& req, httplib::Response& res) {
+        neural::TrainingConfig config;
+        if (req.has_param("x")) config.x = std::stod(req.get_param_value("x"));
+        if (req.has_param("y")) config.y = std::stod(req.get_param_value("y"));
+        if (req.has_param("w")) config.initialParams.w = std::stod(req.get_param_value("w"));
+        if (req.has_param("b")) config.initialParams.b = std::stod(req.get_param_value("b"));
+        if (req.has_param("v")) config.initialParams.v = std::stod(req.get_param_value("v"));
+        if (req.has_param("c")) config.initialParams.c = std::stod(req.get_param_value("c"));
+        if (req.has_param("lr")) config.learningRate = std::stod(req.get_param_value("lr"));
+        if (req.has_param("steps")) config.numSteps = std::stoul(req.get_param_value("steps"));
+        if (req.has_param("eps")) config.epsilon = std::stod(req.get_param_value("eps"));
+        if (req.has_param("tol")) config.maxTolerance = std::stod(req.get_param_value("tol"));
+
+        auto result = neural::NeuralNetRegression::train(config);
+        res.set_content(result.toCsv(), "text/csv");
+        res.set_header("Content-Disposition", "attachment; filename=\"neural_backprop_training_log.csv\"");
         res.set_header("Access-Control-Allow-Origin", "*");
     });
 

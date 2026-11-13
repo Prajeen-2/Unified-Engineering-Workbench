@@ -39,6 +39,7 @@ set(CORE_SOURCES
     src/hardware/FpgaDeviceAdapter.cpp
     src/hardware/JtagAdapter.cpp
     src/hardware/HardwareManager.cpp
+    src/neural/NeuralNetRegression.cpp
 )
 
 # Main server executable
@@ -113,4 +114,10 @@ add_executable(test_hardware
     src/hardware/HardwareManager.cpp
 )
 add_test(NAME HardwareIntegrationTests COMMAND test_hardware)
+
+add_executable(test_neural
+    tests/test_neural.cpp
+    src/neural/NeuralNetRegression.cpp
+)
+add_test(NAME NeuralBackpropTests COMMAND test_neural)
 

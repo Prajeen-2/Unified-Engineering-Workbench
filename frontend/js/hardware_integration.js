@@ -457,3 +457,4 @@ class HardwareIntegration {
 document.addEventListener('DOMContentLoaded', () => {
     window.hardwareIntegration = new HardwareIntegration();
 });
+
