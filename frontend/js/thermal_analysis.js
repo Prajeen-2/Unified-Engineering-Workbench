@@ -349,7 +349,7 @@ class ThermalAnalysis {
             }
         };
 
-        Plotly.newPlot(chartDiv, [traceExact, traceFem, tracePeak], layout, { responsive: true, displayModeBar: false });
+        Plotly.newPlot(chartDiv, traces, layout, { responsive: true, displayModeBar: false });
     }
 
     renderMidpointErrorChart(data) {
@@ -486,13 +486,14 @@ class ThermalAnalysis {
 
         studyData.study_entries.forEach(entry => {
             const tr = document.createElement('tr');
+            const rate = (entry.convergence_rate !== undefined ? entry.convergence_rate : entry.convergenceRate) || 0;
             tr.innerHTML = `
                 <td><strong>${entry.num_elements}</strong></td>
                 <td>${entry.num_nodes}</td>
                 <td><code>${entry.element_length_m.toFixed(4)} m</code></td>
                 <td><strong style="color:var(--accent-amber);">${entry.max_midpoint_error_C.toFixed(6)} °C</strong></td>
                 <td>${entry.theoretical_error_C.toFixed(6)} °C</td>
-                <td><span class="metric-pill pill-success">${entry.convergenceRate > 0 ? entry.convergenceRate.toFixed(4) : 'Baseline'}</span></td>
+                <td><span class="metric-pill pill-success">${rate > 0 ? rate.toFixed(4) : 'Baseline'}</span></td>
             `;
             this.tableConvergenceBody.appendChild(tr);
         });
