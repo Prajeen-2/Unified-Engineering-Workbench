@@ -35,7 +35,7 @@ if exist "%PACKAGE_NAME%" (
 
 :: 4. Assemble package using tar.exe with zip compression (-a)
 echo [INFO] Creating ZIP archive with forward-slash paths...
-tar.exe -a -c -f "%PACKAGE_NAME%" Launch.exe workbench_server.exe frontend data README.md THIRD_PARTY_NOTICES.md DEPENDENCIES.lock.md
+tar.exe -a -c -f "%PACKAGE_NAME%" Launch.exe workbench_server.exe frontend data results report docs README.md THIRD_PARTY_NOTICES.md DEPENDENCIES.lock.md
 if %ERRORLEVEL% neq 0 goto :pack_failed
 
 echo ===================================================================
