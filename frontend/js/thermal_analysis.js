@@ -325,10 +325,17 @@ class ThermalAnalysis {
         });
 
         const layout = {
-            title: { text: `1D Temperature Distribution T(x) [N = ${data.num_elements}]`, font: { size: 13, color: '#e6edf3' } },
+            title: {
+                text: `1D Temperature Distribution T(x) [N = ${data.num_elements}]`,
+                font: { size: 13, color: '#e6edf3' },
+                x: 0.02,
+                y: 0.97,
+                xanchor: 'left',
+                yanchor: 'top'
+            },
             paper_bgcolor: '#182030',
             plot_bgcolor: '#0e1420',
-            margin: { l: 55, r: 25, t: 55, b: 45 },
+            margin: { l: 60, r: 25, t: 80, b: 45 },
             xaxis: {
                 title: 'Position along rod x [m]',
                 color: '#8b949e',
@@ -343,9 +350,11 @@ class ThermalAnalysis {
             },
             legend: {
                 orientation: 'h',
-                y: 1.22,
-                x: 0.0,
-                font: { size: 10, color: '#e6edf3' }
+                x: 0.02,
+                y: 1.08,
+                xanchor: 'left',
+                yanchor: 'bottom',
+                font: { size: 10, color: '#8b949e' }
             }
         };
 
@@ -384,10 +393,17 @@ class ThermalAnalysis {
         };
 
         const layout = {
-            title: { text: `Element Midpoint Error Distribution (N = ${data.num_elements})`, font: { size: 12, color: '#e6edf3' } },
+            title: {
+                text: `Element Midpoint Error Distribution (N = ${data.num_elements})`,
+                font: { size: 12, color: '#e6edf3' },
+                x: 0.02,
+                y: 0.97,
+                xanchor: 'left',
+                yanchor: 'top'
+            },
             paper_bgcolor: '#182030',
             plot_bgcolor: '#0e1420',
-            margin: { l: 65, r: 25, t: 55, b: 45 },
+            margin: { l: 65, r: 25, t: 80, b: 45 },
             xaxis: {
                 title: 'Midpoint x [m]',
                 color: '#8b949e',
@@ -400,9 +416,11 @@ class ThermalAnalysis {
             },
             legend: {
                 orientation: 'h',
-                y: 1.25,
-                x: 0.0,
-                font: { size: 10, color: '#e6edf3' }
+                x: 0.02,
+                y: 1.08,
+                xanchor: 'left',
+                yanchor: 'bottom',
+                font: { size: 10, color: '#8b949e' }
             }
         };
 
@@ -437,10 +455,17 @@ class ThermalAnalysis {
         };
 
         const layout = {
-            title: { text: 'Mesh Convergence Study (Log-Log)', font: { size: 12, color: '#e6edf3' } },
+            title: {
+                text: 'Mesh Convergence Study (Log-Log)',
+                font: { size: 12, color: '#e6edf3' },
+                x: 0.02,
+                y: 0.97,
+                xanchor: 'left',
+                yanchor: 'top'
+            },
             paper_bgcolor: '#182030',
             plot_bgcolor: '#0e1420',
-            margin: { l: 65, r: 25, t: 55, b: 45 },
+            margin: { l: 65, r: 25, t: 80, b: 45 },
             xaxis: {
                 title: 'Elements N (Log Scale)',
                 type: 'log',
@@ -457,9 +482,11 @@ class ThermalAnalysis {
             },
             legend: {
                 orientation: 'h',
-                y: 1.25,
-                x: 0.0,
-                font: { size: 10, color: '#e6edf3' }
+                x: 0.02,
+                y: 1.08,
+                xanchor: 'left',
+                yanchor: 'bottom',
+                font: { size: 10, color: '#8b949e' }
             },
             annotations: [
                 {
