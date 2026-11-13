@@ -7,6 +7,9 @@ out/
 *.ilk
 *.idb
 *.exp
+*.exe
+*.zip
+*.log
 
 # Visual Studio / IDE
 .vs/

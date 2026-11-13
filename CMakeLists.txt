@@ -5,6 +5,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Link MSVC runtime statically (/MT in Release, /MTd in Debug) so binaries run on clean Windows 11 without redistributable DLLs
+if(MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
 # Optimization and compiler options
 if(MSVC)
     add_compile_options(/W4 /EHsc /utf-8 /permissive-)
@@ -57,6 +62,7 @@ if(WIN32)
     add_executable(Launch WIN32
         src/launcher/launch.cpp
     )
+    target_link_libraries(Launch PRIVATE ws2_32 shell32 user32)
     # Output Launch.exe directly into project root or bin
     set_target_properties(Launch PROPERTIES
         OUTPUT_NAME "Launch"

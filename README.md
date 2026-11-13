@@ -32,25 +32,48 @@ All numerical solvers, file parsers, concurrency thread pools, hardware state ma
 
 To evaluate this application with **zero terminal commands, zero PowerShell, zero administrator rights, zero package installs, and zero internet connectivity**:
 
-1. Extract the submission ZIP package (`Candidate_Unified_Engineering_Workbench.zip`).
+1. Extract the submission ZIP package (`CandidateID_Workbench.zip`).
 2. Double-click **`Launch.exe`** located in the root directory.
-3. The Win32 GUI launcher initializes `workbench_server.exe` in the background and automatically opens the user's default web browser to the local workbench:
+3. The Win32 GUI launcher initializes `workbench_server.exe` in the background (hidden, zero visible console windows), waits until `http://127.0.0.1:8080/api/health` responds, and automatically opens the user's default web browser:
    $$\text{http://127.0.0.1:8080/}$$
-
-If port 8080 is in use by another application, the server automatically tests and binds to the next available port in the range `8080`–`8089`.
+4. If the server is already running, `Launch.exe` safely brings up the browser without spawning redundant processes.
 
 ---
 
-### Source Build Instructions (CMake & MSVC)
+### VS Code Single-Action Launch
 
-If rebuilding from source code on Windows 11:
+To build and run directly within Visual Studio Code in one action:
+- **Prerequisite:** Install the **C/C++ extension** (`ms-vscode.cpptools` or C/C++ Extension Pack).
+- Open the project folder in VS Code.
+- Press **`F5`** (or select **Run -> Start Debugging**).
+  - This automatically triggers the `Build All (Release)` task via `${workspaceFolder}\build.bat`.
+  - Upon successful build, it launches `${workspaceFolder}\Launch.exe`, which starts the backend server and opens the browser.
 
-#### Option A: One-Click Automated Build
-Run the provided build script from the project root:
+---
+
+### Source Build & Packaging Instructions
+
+#### Option A: One-Click Automated Build (`build.bat`)
+Run the build script from any command prompt:
 ```bat
 build.bat
 ```
-This script automatically discovers the Visual Studio 2026 / MSVC x64 build tools, generates the CMake Release environment, compiles all executables with `/O2` optimization, and copies `Launch.exe` and `workbench_server.exe` to the root directory.
+This script dynamically detects Visual Studio installations via `vswhere.exe` (or utilizes an active x64 Developer Command Prompt environment), invokes CMake in Release mode (`/O2`, static MSVC runtime `/MT`), compiles all binaries and tests, and deploys `Launch.exe` and `workbench_server.exe` to the root directory.
+
+#### Option B: Submission Packaging Script (`package.bat`)
+To generate the submission ZIP archive without PowerShell or third-party tools:
+```bat
+package.bat [CandidateID]
+```
+This script validates that all executables are built and uses the native Windows `tar.exe` to assemble `CandidateID_Workbench.zip` with clean POSIX forward-slash paths.
+
+---
+
+### Licensing & Third-Party Dependencies
+
+All third-party libraries (cpp-httplib, nlohmann/json, Three.js, OrbitControls, Plotly.js) are documented with exact version pins, upstream repositories, and licenses in:
+- [`THIRD_PARTY_NOTICES.md`](file:///d:/Internship%20app/THIRD_PARTY_NOTICES.md)
+- [`DEPENDENCIES.lock.md`](file:///d:/Internship%20app/DEPENDENCIES.lock.md)
 
 #### Option B: Manual CMake Build
 ```powershell
