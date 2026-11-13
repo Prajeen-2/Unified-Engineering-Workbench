@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cctype>
 #include <unordered_set>
+#include <filesystem>
 
 namespace workbench::geometry {
 
@@ -63,11 +64,19 @@ nlohmann::json CsvParseResult::toJson() const {
     };
 }
 
-CsvParseResult CsvParser::parseString(const std::string& csvContent) {
+CsvParseResult CsvParser::parseString(const std::string& csvContent, size_t maxSizeBytes) {
     CsvParseResult result;
-    if (csvContent.empty()) {
+    if (csvContent.size() > maxSizeBytes) {
         result.success = false;
-        result.errorMessage = "CSV content is empty.";
+        result.errorMessage = "CSV content size (" + std::to_string(csvContent.size()) +
+                              " bytes) exceeds maximum allowable limit of " +
+                              std::to_string(maxSizeBytes) + " bytes (50 MB).";
+        return result;
+    }
+
+    if (csvContent.empty() || trim(csvContent).empty()) {
+        result.success = false;
+        result.errorMessage = "File is empty (0 bytes or whitespace only).";
         return result;
     }
 
@@ -200,7 +209,7 @@ CsvParseResult CsvParser::parseString(const std::string& csvContent) {
 
     if (result.cloud.nodes.empty()) {
         result.success = false;
-        result.errorMessage = "No valid data rows found in CSV.";
+        result.errorMessage = "CSV contains a header row but no data rows (header-only CSV).";
         return result;
     }
 
@@ -214,8 +223,30 @@ CsvParseResult CsvParser::parseString(const std::string& csvContent) {
     return result;
 }
 
-CsvParseResult CsvParser::parseFile(const std::string& filePath) {
+CsvParseResult CsvParser::parseFile(const std::string& filePath, size_t maxSizeBytes) {
     CsvParseResult result;
+    std::error_code ec;
+    if (!std::filesystem::exists(filePath, ec)) {
+        result.success = false;
+        result.errorMessage = "Unable to open CSV file: " + filePath + " (file does not exist).";
+        return result;
+    }
+
+    auto fileSize = std::filesystem::file_size(filePath, ec);
+    if (!ec && fileSize > maxSizeBytes) {
+        result.success = false;
+        result.errorMessage = "CSV file size (" + std::to_string(fileSize) +
+                              " bytes) exceeds maximum allowable limit of " +
+                              std::to_string(maxSizeBytes) + " bytes (50 MB).";
+        return result;
+    }
+
+    if (!ec && fileSize == 0) {
+        result.success = false;
+        result.errorMessage = "File is empty (0 bytes or whitespace only).";
+        return result;
+    }
+
     std::ifstream file(filePath);
     if (!file.is_open()) {
         result.success = false;
@@ -225,7 +256,7 @@ CsvParseResult CsvParser::parseFile(const std::string& filePath) {
 
     std::stringstream buffer;
     buffer << file.rdbuf();
-    return parseString(buffer.str());
+    return parseString(buffer.str(), maxSizeBytes);
 }
 
 } // namespace workbench::geometry

@@ -54,6 +54,11 @@ class PerformanceLab {
             btnRun.addEventListener('click', () => this.runBenchmark());
         }
 
+        const btnCancel = document.getElementById('btn-cancel-perf-benchmark');
+        if (btnCancel) {
+            btnCancel.addEventListener('click', () => this.cancelBenchmark());
+        }
+
         const btnReset = document.getElementById('btn-reset-perf-benchmark');
         if (btnReset) {
             btnReset.addEventListener('click', () => this.resetDefaults());
@@ -67,6 +72,17 @@ class PerformanceLab {
         window.addEventListener('resize', () => {
             this.resizeCharts();
         });
+    }
+
+    async cancelBenchmark() {
+        if (!this.isRunning || !this.activeJobId) return;
+        try {
+            await window.api.cancelJob(this.activeJobId);
+            const statusText = document.getElementById('perf-status-text');
+            if (statusText) statusText.innerText = 'Cancelling benchmark in progress...';
+        } catch (err) {
+            console.error('Failed to deliver cancel signal:', err);
+        }
     }
 
     initDocsTabs() {
@@ -157,22 +173,49 @@ class PerformanceLab {
         this.setRunningState(true);
 
         try {
-            const res = await window.api.runPerformanceBenchmark(config);
-            if (res.success && res.data && res.data.success) {
-                this.currentBenchmarkData = res.data;
-                this.renderResults(res.data);
-                if (window.showToast) {
-                    window.showToast('Multicore benchmark suite completed with 100% numerical verification!', 'success');
+            const startRes = await window.api.startBenchmarkJob(config);
+            if (!startRes.success || !startRes.data || !startRes.data.job_id) {
+                throw new Error(startRes.error || startRes.data?.error_message || 'Failed to initialize benchmark job.');
+            }
+
+            this.activeJobId = startRes.data.job_id;
+            const progressBar = document.getElementById('perf-progress-bar');
+            const statusText = document.getElementById('perf-status-text');
+
+            // Poll real C++ async job state until completed or cancelled
+            while (this.isRunning && this.activeJobId) {
+                await new Promise(r => setTimeout(r, 150));
+                const pollRes = await window.api.getJob(this.activeJobId);
+                if (!pollRes.success || !pollRes.data) continue;
+
+                const job = pollRes.data;
+                if (progressBar) progressBar.style.width = (job.progress || 0) + '%';
+                if (statusText && job.message) statusText.innerText = job.message;
+
+                if (job.status === 'completed') {
+                    if (progressBar) progressBar.style.width = '100%';
+                    this.currentBenchmarkData = job.result;
+                    this.renderResults(job.result);
+                    if (window.showToast) {
+                        window.showToast('Multicore benchmark suite completed with 100% numerical verification!', 'success');
+                    }
+                    break;
+                } else if (job.status === 'cancelled') {
+                    this.showError('Benchmark cancelled by user.');
+                    if (window.showToast) window.showToast('Benchmark cancelled.', 'info');
+                    break;
+                } else if (job.status === 'failed') {
+                    const errMsg = job.error_message || 'Benchmark execution failed.';
+                    this.showError(errMsg);
+                    if (window.showToast) window.showToast(errMsg, 'error');
+                    break;
                 }
-            } else {
-                const errMsg = res.data?.error_message || res.error || 'Benchmark execution failed.';
-                this.showError(errMsg);
-                if (window.showToast) window.showToast(errMsg, 'error');
             }
         } catch (err) {
             this.showError(err.message || 'Error communicating with backend benchmark engine.');
             if (window.showToast) window.showToast(err.message, 'error');
         } finally {
+            this.activeJobId = null;
             this.setRunningState(false);
         }
     }
@@ -180,33 +223,31 @@ class PerformanceLab {
     setRunningState(running) {
         this.isRunning = running;
         const btnRun = document.getElementById('btn-run-perf-benchmark');
+        const btnCancel = document.getElementById('btn-cancel-perf-benchmark');
         const btnLabel = document.getElementById('perf-btn-label');
-        const statusText = document.getElementById('perf-status-text');
         const progressContainer = document.getElementById('perf-progress-container');
         const progressBar = document.getElementById('perf-progress-bar');
         const summaryPill = document.getElementById('perf-summary-pill');
 
         if (running) {
             if (btnRun) btnRun.disabled = true;
+            if (btnCancel) btnCancel.style.display = 'inline-flex';
             if (btnLabel) btnLabel.innerText = 'Benchmarking...';
-            if (statusText) statusText.innerText = 'Executing warm-up and 5 measured repetitions across 1, 2, 3, 4 worker threads...';
             if (summaryPill) {
                 summaryPill.className = 'metric-pill pill-cyan';
                 summaryPill.innerText = 'Computing...';
             }
             if (progressContainer) progressContainer.style.display = 'block';
-            if (progressBar) {
-                progressBar.style.width = '0%';
-                setTimeout(() => progressBar.style.width = '30%', 100);
-                setTimeout(() => progressBar.style.width = '65%', 300);
-                setTimeout(() => progressBar.style.width = '90%', 600);
-            }
+            if (progressBar) progressBar.style.width = '0%';
         } else {
             if (btnRun) btnRun.disabled = false;
+            if (btnCancel) btnCancel.style.display = 'none';
             if (btnLabel) btnLabel.innerText = 'Run Multicore Benchmark';
             if (progressContainer) {
                 if (progressBar) progressBar.style.width = '100%';
-                setTimeout(() => progressContainer.style.display = 'none', 300);
+                setTimeout(() => {
+                    if (!this.isRunning && progressContainer) progressContainer.style.display = 'none';
+                }, 400);
             }
         }
     }

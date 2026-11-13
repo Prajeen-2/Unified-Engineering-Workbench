@@ -147,7 +147,35 @@ void testBenchmarkSuiteExecution() {
     BENCH_REQUIRE(!csv.empty(), "CSV output empty");
     BENCH_REQUIRE(csv.find("workers,run1_ms,run2_ms") != std::string::npos, "CSV header missing");
     BENCH_REQUIRE(csv.find("PASS") != std::string::npos, "CSV verification status missing");
-    std::cout << "  -> Passed: Full benchmark suite executed and CSV validated." << std::endl;
+    BENCH_REQUIRE(csv.find("Hardware Audit Metadata:") != std::string::npos, "CSV must contain audit metadata");
+    BENCH_REQUIRE(csv.find("CPU Processor:") != std::string::npos, "CSV must contain CPU model");
+    BENCH_REQUIRE(csv.find("Logical Cores:") != std::string::npos, "CSV must contain logical cores");
+    BENCH_REQUIRE(csv.find("Installed RAM:") != std::string::npos, "CSV must contain RAM");
+    BENCH_REQUIRE(csv.find("Compiler Optimization Flags:") != std::string::npos, "CSV must contain compiler flags");
+    std::cout << "  -> Passed: Full benchmark suite executed and auditable CSV validated." << std::endl;
+}
+
+void testSingleCpuGracefulHandling() {
+    std::cout << "[TEST 6] Testing single-CPU and capped worker graceful handling..." << std::endl;
+
+    BenchmarkConfig config;
+    config.numCases = 20;
+    config.numElements = 15;
+    config.randomSeed = 101;
+    config.workerCounts = {1, 2, 8}; // Requesting 8 workers should be clamped to logical cores
+    config.repetitions = 5;
+
+    auto suite = PerformanceBenchmark::runSuite(config, 10.0);
+    BENCH_REQUIRE(suite.success, "Benchmark suite must succeed without crashing");
+    BENCH_REQUIRE(suite.allVerified, "All results must be verified <= 1e-8 C");
+    BENCH_REQUIRE(!suite.workerResults.empty(), "Must return worker results");
+
+    for (const auto& w : suite.workerResults) {
+        BENCH_REQUIRE(w.workerCount <= 4, "Worker count must be capped at min(4, logical CPUs)");
+        BENCH_REQUIRE(!w.assessmentNote.empty(), "Assessment note must be populated");
+        BENCH_REQUIRE(w.verified, "Result must satisfy numerical tolerance");
+    }
+    std::cout << "  -> Passed: Single-CPU and capped worker queries handled gracefully." << std::endl;
 }
 
 int main() {
@@ -162,8 +190,9 @@ int main() {
         testSerialVsParallelNumericalEquivalence();
         testDeterministicResultOrdering();
         testBenchmarkSuiteExecution();
+        testSingleCpuGracefulHandling();
 
-        std::cout << "\n>>> ALL 5/5 PERFORMANCE BENCHMARK TESTS PASSED SUCCESSFULLY! <<<" << std::endl;
+        std::cout << "\n>>> ALL 6/6 PERFORMANCE BENCHMARK TESTS PASSED SUCCESSFULLY! <<<" << std::endl;
         return 0;
     } catch (const std::exception& e) {
         std::cerr << "FATAL TEST EXCEPTION: " << e.what() << std::endl;

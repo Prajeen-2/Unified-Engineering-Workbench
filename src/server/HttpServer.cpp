@@ -1,5 +1,10 @@
 #if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -20,6 +25,8 @@
 #include <filesystem>
 #include <sstream>
 #include <fstream>
+#include <random>
+#include <iomanip>
 
 namespace workbench::server {
 
@@ -27,6 +34,12 @@ HttpServer::HttpServer(const ServerConfig& config)
     : m_config(config),
       m_actualPort(config.port),
       m_server(std::make_unique<httplib::Server>()) {
+    std::random_device rd;
+    std::mt19937_64 gen(rd());
+    std::uniform_int_distribution<uint64_t> dist;
+    std::ostringstream ss;
+    ss << std::hex << std::setfill('0') << std::setw(16) << dist(gen) << std::setw(16) << dist(gen);
+    m_sessionToken = ss.str();
 }
 
 HttpServer::~HttpServer() {
@@ -40,8 +53,25 @@ std::string HttpServer::getBaseUrl() const {
 }
 
 void HttpServer::setupRoutes() {
+    auto applyCors = [this](const httplib::Request& req, httplib::Response& res) {
+        std::string origin = req.get_header_value("Origin");
+        if (origin.empty()) {
+            res.set_header("Access-Control-Allow-Origin", "http://127.0.0.1:" + std::to_string(m_actualPort));
+        } else if (origin.find("127.0.0.1") != std::string::npos || origin.find("localhost") != std::string::npos) {
+            res.set_header("Access-Control-Allow-Origin", origin);
+        } else {
+            res.set_header("Access-Control-Allow-Origin", "http://127.0.0.1:" + std::to_string(m_actualPort));
+        }
+        res.set_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Session-Token");
+    };
+
+    // Global post-routing handler to enforce strictly bound localhost CORS on all responses
+    m_server->set_post_routing_handler([this, applyCors](const httplib::Request& req, httplib::Response& res) {
+        applyCors(req, res);
+    });
+
     // Health check endpoint
-    m_server->Get("/api/health", [](const httplib::Request&, httplib::Response& res) {
+    m_server->Get("/api/health", [applyCors](const httplib::Request& req, httplib::Response& res) {
         nlohmann::json response = {
             {"status", "ok"},
             {"service", "Unified Engineering Workbench Backend"},
@@ -50,14 +80,16 @@ void HttpServer::setupRoutes() {
                 std::chrono::system_clock::now().time_since_epoch()).count()}
         };
         res.set_content(response.dump(2), "application/json");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        applyCors(req, res);
     });
 
     // System telemetry endpoint
-    m_server->Get("/api/system/info", [](const httplib::Request&, httplib::Response& res) {
+    m_server->Get("/api/system/info", [this, applyCors](const httplib::Request& req, httplib::Response& res) {
         auto telemetry = core::SystemInfoProvider::getTelemetry();
-        res.set_content(telemetry.toJson().dump(2), "application/json");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        auto j = telemetry.toJson();
+        j["session_token"] = m_sessionToken;
+        res.set_content(j.dump(2), "application/json");
+        applyCors(req, res);
     });
 
     // Logging endpoint
@@ -89,7 +121,7 @@ void HttpServer::setupRoutes() {
             {"logs", logArray}
         };
         res.set_content(response.dump(2), "application/json");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
     // Plaintext Log Export Endpoint (Task G)
@@ -113,7 +145,7 @@ void HttpServer::setupRoutes() {
         }
         res.set_content(ss.str(), "text/plain");
         res.set_header("Content-Disposition", "attachment; filename=\"workbench_system_logs.log\"");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
     // Clear Logs Endpoint (Settings Module)
@@ -125,7 +157,7 @@ void HttpServer::setupRoutes() {
             {"message", "In-memory log buffer cleared successfully."}
         };
         res.set_content(response.dump(2), "application/json");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
     // Comprehensive Settings & Diagnostics Metadata Endpoint
@@ -176,7 +208,7 @@ void HttpServer::setupRoutes() {
             }}
         };
         res.set_content(response.dump(2), "application/json");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
     // Sample Benchmark Geometry Assets
@@ -184,14 +216,14 @@ void HttpServer::setupRoutes() {
         std::string stlPath = core::SystemInfoProvider::resolvePath("data/stl/engineering_bracket.stl");
         auto parseRes = geometry::StlParser::parseAsciiFile(stlPath);
         res.set_content(parseRes.toJson().dump(2), "application/json");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
     m_server->Get("/api/geometry/sample-csv", [](const httplib::Request&, httplib::Response& res) {
         std::string csvPath = core::SystemInfoProvider::resolvePath("data/csv/synthetic_thermal_field.csv");
         auto parseRes = geometry::CsvParser::parseFile(csvPath);
         res.set_content(parseRes.toJson().dump(2), "application/json");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
     // Custom STL Parse Endpoint
@@ -208,7 +240,7 @@ void HttpServer::setupRoutes() {
                     std::string filePath = core::SystemInfoProvider::resolvePath(j["path"].get<std::string>());
                     auto parseRes = geometry::StlParser::parseAsciiFile(filePath);
                     res.set_content(parseRes.toJson().dump(2), "application/json");
-                    res.set_header("Access-Control-Allow-Origin", "*");
+                    // CORS handled by global post-routing handler
                     return;
                 }
             } catch (...) {
@@ -218,7 +250,7 @@ void HttpServer::setupRoutes() {
 
         auto parseRes = geometry::StlParser::parseAsciiString(contentToParse);
         res.set_content(parseRes.toJson().dump(2), "application/json");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
     // Custom ANSYS CSV Parse Endpoint
@@ -235,7 +267,7 @@ void HttpServer::setupRoutes() {
                     std::string filePath = core::SystemInfoProvider::resolvePath(j["path"].get<std::string>());
                     auto parseRes = geometry::CsvParser::parseFile(filePath);
                     res.set_content(parseRes.toJson().dump(2), "application/json");
-                    res.set_header("Access-Control-Allow-Origin", "*");
+                    // CORS handled by global post-routing handler
                     return;
                 }
             } catch (...) {
@@ -245,7 +277,7 @@ void HttpServer::setupRoutes() {
 
         auto parseRes = geometry::CsvParser::parseString(contentToParse);
         res.set_content(parseRes.toJson().dump(2), "application/json");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
     // ===================================================================
@@ -271,14 +303,14 @@ void HttpServer::setupRoutes() {
                     {"error_message", std::string("Malformed JSON payload: ") + e.what()}
                 };
                 res.set_content(errRes.dump(2), "application/json");
-                res.set_header("Access-Control-Allow-Origin", "*");
+                // CORS handled by global post-routing handler
                 return;
             }
         }
 
         auto solveRes = thermal::ThermalSolver1D::solve(params);
         res.set_content(solveRes.toJson().dump(2), "application/json");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
     m_server->Post("/api/thermal/convergence", [](const httplib::Request& req, httplib::Response& res) {
@@ -306,14 +338,14 @@ void HttpServer::setupRoutes() {
                     {"error_message", std::string("Malformed JSON payload: ") + e.what()}
                 };
                 res.set_content(errRes.dump(2), "application/json");
-                res.set_header("Access-Control-Allow-Origin", "*");
+                // CORS handled by global post-routing handler
                 return;
             }
         }
 
         auto studyRes = thermal::ThermalSolver1D::runConvergenceStudy(params, meshSizes);
         res.set_content(studyRes.toJson().dump(2), "application/json");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
     m_server->Get("/api/thermal/export-csv", [](const httplib::Request& req, httplib::Response& res) {
@@ -340,7 +372,7 @@ void HttpServer::setupRoutes() {
             res.set_content(solveRes.toCsv(), "text/csv");
             res.set_header("Content-Disposition", "attachment; filename=\"thermal_temperature_results.csv\"");
         }
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
     // Multicore Performance Lab Benchmark endpoint
@@ -356,7 +388,7 @@ void HttpServer::setupRoutes() {
                     {"error_message", std::string("Malformed JSON payload: ") + e.what()}
                 };
                 res.set_content(errRes.dump(2), "application/json");
-                res.set_header("Access-Control-Allow-Origin", "*");
+                // CORS handled by global post-routing handler
                 return;
             }
         }
@@ -369,7 +401,7 @@ void HttpServer::setupRoutes() {
 
         auto suiteResult = performance::PerformanceBenchmark::runSuite(config, launchToReady);
         res.set_content(suiteResult.toJson().dump(2), "application/json");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
     // Performance Lab CSV Export endpoint
@@ -385,7 +417,399 @@ void HttpServer::setupRoutes() {
 
         res.set_content(suiteResult.toCsv(), "text/csv");
         res.set_header("Content-Disposition", "attachment; filename=\"multicore_benchmark_results.csv\"");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
+    });
+
+    // -------------------------------------------------------------
+    // ASYNC JOB MANAGEMENT ENDPOINTS (Task D & Task C Long Studies)
+    // -------------------------------------------------------------
+
+    auto startBenchmarkJob = [this](const httplib::Request& req, httplib::Response& res) {
+        performance::BenchmarkConfig config;
+        if (!req.body.empty()) {
+            try {
+                auto j = nlohmann::json::parse(req.body);
+                config = performance::BenchmarkConfig::fromJson(j);
+            } catch (const std::exception& e) {
+                res.status = 400;
+                res.set_content(nlohmann::json{
+                    {"success", false},
+                    {"error_message", std::string("Malformed JSON payload: ") + e.what()}
+                }.dump(2), "application/json");
+                return;
+            }
+        }
+
+        std::string configErr;
+        if (!config.validate(configErr)) {
+            res.status = 400;
+            res.set_content(nlohmann::json{
+                {"success", false},
+                {"error_message", configErr}
+            }.dump(2), "application/json");
+            return;
+        }
+
+        auto job = std::make_shared<AsyncJob>();
+        uint64_t jId = ++m_jobCounter;
+        job->id = "bench_" + std::to_string(jId);
+        job->type = "benchmark";
+        job->status = "running";
+        job->progressPercent = 5;
+        job->message = "Generating reproducible workload...";
+
+        {
+            std::lock_guard<std::mutex> lock(m_jobsMutex);
+            m_jobs[job->id] = job;
+        }
+
+        double launchToReady = core::SystemInfoProvider::getLaunchToReadyMs();
+
+        std::thread([job, config, launchToReady]() {
+            try {
+                if (job->cancelRequested) {
+                    job->status = "cancelled";
+                    job->message = "Benchmark cancelled by user.";
+                    return;
+                }
+
+                job->progressPercent = 10;
+                job->message = "Running baseline serial warm-up and calibration...";
+
+                size_t availableCpus = std::thread::hardware_concurrency();
+                if (availableCpus == 0) availableCpus = 1;
+                const size_t maxAllowed = (availableCpus <= 1) ? 2 : std::min<size_t>(4, availableCpus);
+
+                std::vector<size_t> workers;
+                for (auto w : config.workerCounts) {
+                    size_t cl = std::min<size_t>(w, maxAllowed);
+                    if (std::find(workers.begin(), workers.end(), cl) == workers.end()) {
+                        workers.push_back(cl);
+                    }
+                }
+                std::sort(workers.begin(), workers.end());
+
+                const auto cases = performance::PerformanceBenchmark::generateWorkload(
+                    config.numCases, config.numElements, config.randomSeed);
+
+                if (job->cancelRequested) {
+                    job->status = "cancelled";
+                    job->message = "Benchmark cancelled by user.";
+                    return;
+                }
+
+                auto serialBaseline = performance::PerformanceBenchmark::runSerial(cases);
+                std::vector<double> serialReps;
+                for (size_t r = 0; r < config.repetitions; ++r) {
+                    if (job->cancelRequested) {
+                        job->status = "cancelled";
+                        job->message = "Benchmark cancelled by user.";
+                        return;
+                    }
+                    auto t0 = std::chrono::high_resolution_clock::now();
+                    performance::PerformanceBenchmark::runSerial(cases);
+                    auto t1 = std::chrono::high_resolution_clock::now();
+                    serialReps.push_back(std::chrono::duration<double, std::milli>(t1 - t0).count());
+                }
+                std::sort(serialReps.begin(), serialReps.end());
+                double serialMedian = serialReps[serialReps.size() / 2];
+
+                performance::BenchmarkSuiteResult suite;
+                suite.config = config;
+                suite.launchToReadyMs = launchToReady;
+                suite.serialBaselineMedianMs = serialMedian;
+                suite.allVerified = true;
+
+                auto now = std::chrono::system_clock::now();
+                std::time_t nowTime = std::chrono::system_clock::to_time_t(now);
+                std::tm tmBuffer;
+#if defined(_WIN32)
+                gmtime_s(&tmBuffer, &nowTime);
+#else
+                gmtime_r(&nowTime, &tmBuffer);
+#endif
+                char timeStr[64];
+                std::strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S UTC", &tmBuffer);
+                suite.timestamp = timeStr;
+
+                double t1Ref = serialMedian;
+                size_t totalSteps = workers.size();
+
+                for (size_t step = 0; step < totalSteps; ++step) {
+                    if (job->cancelRequested) {
+                        job->status = "cancelled";
+                        job->message = "Benchmark cancelled by user.";
+                        return;
+                    }
+
+                    size_t w = workers[step];
+                    job->message = "Benchmarking worker pool with " + std::to_string(w) + " thread" + (w > 1 ? "s" : "") + "...";
+                    job->progressPercent = static_cast<int>(20 + (75.0 * step / totalSteps));
+
+                    performance::WorkerRunResult wRes;
+                    wRes.workerCount = w;
+                    performance::ThreadPool pool(w);
+                    std::vector<thermal::ThermalSolveResult> outRes(cases.size());
+
+                    performance::PerformanceBenchmark::runParallel(cases, pool, outRes);
+
+                    for (size_t r = 0; r < config.repetitions; ++r) {
+                        if (job->cancelRequested) {
+                            job->status = "cancelled";
+                            job->message = "Benchmark cancelled by user.";
+                            return;
+                        }
+                        auto t0 = std::chrono::high_resolution_clock::now();
+                        performance::PerformanceBenchmark::runParallel(cases, pool, outRes);
+                        auto t1 = std::chrono::high_resolution_clock::now();
+                        wRes.repetitionTimesMs.push_back(std::chrono::duration<double, std::milli>(t1 - t0).count());
+                    }
+
+                    auto sortedTimes = wRes.repetitionTimesMs;
+                    std::sort(sortedTimes.begin(), sortedTimes.end());
+                    wRes.medianTimeMs = sortedTimes[sortedTimes.size() / 2];
+                    wRes.minTimeMs = sortedTimes.front();
+                    wRes.maxTimeMs = sortedTimes.back();
+                    double sum = std::accumulate(wRes.repetitionTimesMs.begin(), wRes.repetitionTimesMs.end(), 0.0);
+                    wRes.meanTimeMs = sum / static_cast<double>(wRes.repetitionTimesMs.size());
+
+                    if (wRes.repetitionTimesMs.size() > 1) {
+                        double sqSum = 0.0;
+                        for (double tVal : wRes.repetitionTimesMs) {
+                            sqSum += (tVal - wRes.meanTimeMs) * (tVal - wRes.meanTimeMs);
+                        }
+                        wRes.stdDevTimeMs = std::sqrt(sqSum / static_cast<double>(wRes.repetitionTimesMs.size() - 1));
+                    }
+
+                    if (w == 1) t1Ref = wRes.medianTimeMs;
+
+                    wRes.maxTempDiffVsSerial = performance::PerformanceBenchmark::compareResults(serialBaseline, outRes);
+                    wRes.verified = (wRes.maxTempDiffVsSerial <= 1.0e-8);
+                    if (!wRes.verified) suite.allVerified = false;
+
+                    suite.workerResults.push_back(wRes);
+                }
+
+                for (auto& wRes : suite.workerResults) {
+                    if (availableCpus <= 1 && wRes.workerCount > 1) {
+                        wRes.speedupAssessable = false;
+                        wRes.assessmentNote = "speedup_not_assessable";
+                        wRes.speedup = (wRes.medianTimeMs > 0.0) ? (t1Ref / wRes.medianTimeMs) : 1.0;
+                        wRes.efficiency = wRes.speedup / static_cast<double>(wRes.workerCount);
+                    } else {
+                        wRes.speedupAssessable = true;
+                        wRes.assessmentNote = "assessable";
+                        wRes.speedup = (wRes.medianTimeMs > 0.0) ? (t1Ref / wRes.medianTimeMs) : 1.0;
+                        wRes.efficiency = wRes.speedup / static_cast<double>(wRes.workerCount);
+                    }
+                }
+
+                suite.success = true;
+                job->result = suite.toJson();
+                job->progressPercent = 100;
+                job->status = "completed";
+                job->message = "Benchmark completed successfully across " + std::to_string(workers.size()) + " configurations.";
+            } catch (const std::exception& e) {
+                job->status = "failed";
+                job->errorMessage = e.what();
+                job->message = std::string("Benchmark error: ") + e.what();
+            }
+        }).detach();
+
+        res.set_content(nlohmann::json{
+            {"success", true},
+            {"job_id", job->id},
+            {"status", "running"},
+            {"message", "Benchmark job scheduled."}
+        }.dump(2), "application/json");
+    };
+
+    m_server->Post("/api/benchmark/start", startBenchmarkJob);
+    m_server->Post("/api/performance/benchmark/start", startBenchmarkJob);
+
+    m_server->Post("/api/thermal/convergence/start", [this](const httplib::Request& req, httplib::Response& res) {
+        thermal::ThermalParameters params;
+        if (!req.body.empty()) {
+            try {
+                auto j = nlohmann::json::parse(req.body);
+                if (j.contains("length")) params.length = j["length"].get<double>();
+                if (j.contains("area")) params.area = j["area"].get<double>();
+                if (j.contains("conductivity")) params.conductivity = j["conductivity"].get<double>();
+                if (j.contains("heat_generation")) params.heatGeneration = j["heat_generation"].get<double>();
+                if (j.contains("t_left")) params.tLeft = j["t_left"].get<double>();
+                if (j.contains("t_right")) params.tRight = j["t_right"].get<double>();
+            } catch (const std::exception& e) {
+                res.status = 400;
+                res.set_content(nlohmann::json{
+                    {"success", false},
+                    {"error_message", std::string("Malformed JSON payload: ") + e.what()}
+                }.dump(2), "application/json");
+                return;
+            }
+        }
+
+        std::string paramErr;
+        if (!params.validate(paramErr)) {
+            res.status = 400;
+            res.set_content(nlohmann::json{
+                {"success", false},
+                {"error_message", paramErr}
+            }.dump(2), "application/json");
+            return;
+        }
+
+        auto job = std::make_shared<AsyncJob>();
+        uint64_t jId = ++m_jobCounter;
+        job->id = "conv_" + std::to_string(jId);
+        job->type = "convergence";
+        job->status = "running";
+        job->progressPercent = 10;
+        job->message = "Initializing convergence study...";
+
+        {
+            std::lock_guard<std::mutex> lock(m_jobsMutex);
+            m_jobs[job->id] = job;
+        }
+
+        std::thread([job, params]() {
+            try {
+                std::vector<uint32_t> meshSizes = {10, 20, 40, 80};
+                thermal::ConvergenceStudyResult studyResult;
+                studyResult.parameters = params;
+
+                std::vector<thermal::MeshConvergenceEntry> entries;
+                double prevError = 0.0;
+                double prevH = 0.0;
+
+                for (size_t i = 0; i < meshSizes.size(); ++i) {
+                    if (job->cancelRequested) {
+                        job->status = "cancelled";
+                        job->message = "Convergence study cancelled by user.";
+                        return;
+                    }
+
+                    uint32_t N = meshSizes[i];
+                    job->message = "Solving finite element mesh N=" + std::to_string(N) + "...";
+                    job->progressPercent = static_cast<int>(15 + (80.0 * i / meshSizes.size()));
+
+                    thermal::ThermalParameters p = params;
+                    p.numElements = N;
+
+                    auto sol = thermal::ThermalSolver1D::solve(p);
+                    if (!sol.success) {
+                        job->status = "failed";
+                        job->errorMessage = sol.errorMessage;
+                        return;
+                    }
+
+                    double currentH = p.length / static_cast<double>(N);
+                    double currentError = sol.maxMidpointError;
+                    double theoretical = sol.theoreticalMaxMidpointError;
+                    double rate = 0.0;
+
+                    if (i > 0 && prevError > 1e-14 && currentError > 1e-14 && prevH > currentH) {
+                        rate = std::log(prevError / currentError) / std::log(prevH / currentH);
+                    }
+
+                    entries.push_back({
+                        N,
+                        N + 1,
+                        currentH,
+                        currentError,
+                        theoretical,
+                        rate,
+                        sol.nodes
+                    });
+
+                    prevError = currentError;
+                    prevH = currentH;
+                }
+
+                studyResult.entries = entries;
+                studyResult.success = true;
+                job->result = studyResult.toJson();
+                job->progressPercent = 100;
+                job->status = "completed";
+                job->message = "Convergence study completed across all 4 meshes.";
+            } catch (const std::exception& e) {
+                job->status = "failed";
+                job->errorMessage = e.what();
+            }
+        }).detach();
+
+        res.set_content(nlohmann::json{
+            {"success", true},
+            {"job_id", job->id},
+            {"status", "running"},
+            {"message", "Convergence study job scheduled."}
+        }.dump(2), "application/json");
+    });
+
+    m_server->Get(R"(/api/jobs/([^/]+))", [this](const httplib::Request& req, httplib::Response& res) {
+        std::string jobId = req.matches[1];
+        std::shared_ptr<AsyncJob> job;
+        {
+            std::lock_guard<std::mutex> lock(m_jobsMutex);
+            auto it = m_jobs.find(jobId);
+            if (it != m_jobs.end()) {
+                job = it->second;
+            }
+        }
+
+        if (!job) {
+            res.status = 404;
+            res.set_content(nlohmann::json{
+                {"success", false},
+                {"error_message", "Job not found: " + jobId}
+            }.dump(2), "application/json");
+            return;
+        }
+
+        nlohmann::json resp = {
+            {"success", true},
+            {"job_id", job->id},
+            {"type", job->type},
+            {"status", job->status},
+            {"progress", job->progressPercent},
+            {"message", job->message},
+            {"error_message", job->errorMessage}
+        };
+        if (job->status == "completed") {
+            resp["result"] = job->result;
+        }
+        res.set_content(resp.dump(2), "application/json");
+    });
+
+    m_server->Post(R"(/api/jobs/([^/]+)/cancel)", [this](const httplib::Request& req, httplib::Response& res) {
+        std::string jobId = req.matches[1];
+        std::shared_ptr<AsyncJob> job;
+        {
+            std::lock_guard<std::mutex> lock(m_jobsMutex);
+            auto it = m_jobs.find(jobId);
+            if (it != m_jobs.end()) {
+                job = it->second;
+            }
+        }
+
+        if (!job) {
+            res.status = 404;
+            res.set_content(nlohmann::json{
+                {"success", false},
+                {"error_message", "Job not found: " + jobId}
+            }.dump(2), "application/json");
+            return;
+        }
+
+        job->cancelRequested = true;
+        job->status = "cancelling";
+        job->message = "Cancellation requested...";
+
+        res.set_content(nlohmann::json{
+            {"success", true},
+            {"job_id", job->id},
+            {"status", "cancelling"},
+            {"message", "Job cancellation signal delivered."}
+        }.dump(2), "application/json");
     });
 
     // Hardware Integration Endpoints (Task E)
@@ -401,19 +825,19 @@ void HttpServer::setupRoutes() {
             {"devices", jList}
         };
         res.set_content(response.dump(2), "application/json");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
     m_server->Get("/api/hardware/telemetry", [](const httplib::Request&, httplib::Response& res) {
         auto telem = hardware::HardwareManager::instance().getAllTelemetry();
         res.set_content(telem.dump(2), "application/json");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
     m_server->Get("/api/hardware/architecture", [](const httplib::Request&, httplib::Response& res) {
         auto arch = hardware::HardwareManager::getSystemElectricalArchitecture();
         res.set_content(arch.dump(2), "application/json");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
     m_server->Post("/api/hardware/connect", [](const httplib::Request& req, httplib::Response& res) {
@@ -436,7 +860,7 @@ void HttpServer::setupRoutes() {
             {"message", ok ? "Device(s) connected successfully." : "Connection failed."}
         };
         res.set_content(response.dump(2), "application/json");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
     m_server->Post("/api/hardware/disconnect", [](const httplib::Request& req, httplib::Response& res) {
@@ -459,7 +883,7 @@ void HttpServer::setupRoutes() {
             {"message", ok ? "Device(s) disconnected." : "Disconnect failed."}
         };
         res.set_content(response.dump(2), "application/json");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
     m_server->Post("/api/hardware/fault-inject", [](const httplib::Request& req, httplib::Response& res) {
@@ -480,7 +904,7 @@ void HttpServer::setupRoutes() {
             {"message", ok ? "Fault injected successfully." : "Failed to inject fault (device not found)."}
         };
         res.set_content(response.dump(2), "application/json");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
     m_server->Post("/api/hardware/fault-recover", [](const httplib::Request& req, httplib::Response& res) {
@@ -498,7 +922,7 @@ void HttpServer::setupRoutes() {
             {"message", ok ? "Fault recovered successfully. Device operational." : "Recovery failed (device not in fault state)."}
         };
         res.set_content(response.dump(2), "application/json");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
     // Hardware Electrical Pin Architecture CSV Export (Task G)
@@ -523,7 +947,7 @@ void HttpServer::setupRoutes() {
         }
         res.set_content(ss.str(), "text/csv");
         res.set_header("Content-Disposition", "attachment; filename=\"hardware_pin_architecture.csv\"");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
     // Neural Network Lab Training endpoint
@@ -539,7 +963,7 @@ void HttpServer::setupRoutes() {
                     {"error_message", std::string("Malformed JSON payload: ") + e.what()}
                 };
                 res.set_content(errRes.dump(2), "application/json");
-                res.set_header("Access-Control-Allow-Origin", "*");
+                // CORS handled by global post-routing handler
                 return;
             }
         }
@@ -551,14 +975,14 @@ void HttpServer::setupRoutes() {
                 {"error_message", valErr}
             };
             res.set_content(errRes.dump(2), "application/json");
-            res.set_header("Access-Control-Allow-Origin", "*");
+            // CORS handled by global post-routing handler
             return;
         }
 
         core::Logger::instance().info("Running Neural Backprop Training for " + std::to_string(config.numSteps) + " steps");
         auto result = neural::NeuralNetRegression::train(config);
         res.set_content(result.toJson().dump(2), "application/json");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
     // Neural Network Lab Gradient Check endpoint
@@ -589,7 +1013,7 @@ void HttpServer::setupRoutes() {
                     {"error_message", std::string("Malformed JSON payload: ") + e.what()}
                 };
                 res.set_content(errRes.dump(2), "application/json");
-                res.set_header("Access-Control-Allow-Origin", "*");
+                // CORS handled by global post-routing handler
                 return;
             }
         }
@@ -600,7 +1024,7 @@ void HttpServer::setupRoutes() {
             {"gradient_check", check.toJson()}
         };
         res.set_content(response.dump(2), "application/json");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
     // Neural Network Lab CSV Export endpoint
@@ -620,7 +1044,7 @@ void HttpServer::setupRoutes() {
         auto result = neural::NeuralNetRegression::train(config);
         res.set_content(result.toCsv(), "text/csv");
         res.set_header("Content-Disposition", "attachment; filename=\"neural_backprop_training_log.csv\"");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
     // Technical Report Document Download Endpoint (Task G)
@@ -635,7 +1059,7 @@ void HttpServer::setupRoutes() {
             filename.find('\\') != std::string::npos) {
             res.status = 400;
             res.set_content("Invalid file request path.", "text/plain");
-            res.set_header("Access-Control-Allow-Origin", "*");
+            // CORS handled by global post-routing handler
             return;
         }
 
@@ -650,7 +1074,7 @@ void HttpServer::setupRoutes() {
         if (!std::filesystem::exists(docPath)) {
             res.status = 404;
             res.set_content("Requested technical report file not found on server.", "text/plain");
-            res.set_header("Access-Control-Allow-Origin", "*");
+            // CORS handled by global post-routing handler
             return;
         }
 
@@ -658,7 +1082,7 @@ void HttpServer::setupRoutes() {
         if (!file.is_open()) {
             res.status = 500;
             res.set_content("Unable to read report file from filesystem.", "text/plain");
-            res.set_header("Access-Control-Allow-Origin", "*");
+            // CORS handled by global post-routing handler
             return;
         }
 
@@ -666,7 +1090,7 @@ void HttpServer::setupRoutes() {
         buffer << file.rdbuf();
         res.set_content(buffer.str(), "text/markdown; charset=utf-8");
         res.set_header("Content-Disposition", "attachment; filename=\"" + filename + "\"");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
     // Unified Engineering Verification Summary Endpoint (Task G)
@@ -731,30 +1155,61 @@ void HttpServer::setupRoutes() {
             }}
         };
         res.set_content(summary.dump(2), "application/json");
-        res.set_header("Access-Control-Allow-Origin", "*");
+        // CORS handled by global post-routing handler
     });
 
-    // Graceful shutdown endpoint
-    m_server->Post("/api/system/shutdown", [this](const httplib::Request&, httplib::Response& res) {
-        core::Logger::instance().info("Received shutdown request via REST API.");
+    // Graceful shutdown endpoint (protected by random per-session token)
+    m_server->Post("/api/system/shutdown", [this](const httplib::Request& req, httplib::Response& res) {
+        bool authorized = false;
+        if (req.has_header("X-Session-Token")) {
+            if (req.get_header_value("X-Session-Token") == m_sessionToken) {
+                authorized = true;
+            }
+        }
+        if (!authorized && !req.body.empty()) {
+            try {
+                auto j = nlohmann::json::parse(req.body);
+                if (j.contains("token") && j["token"].get<std::string>() == m_sessionToken) {
+                    authorized = true;
+                }
+            } catch (...) {}
+        }
+
+        if (!authorized) {
+            res.status = 403;
+            nlohmann::json err = {
+                {"success", false},
+                {"error_message", "Forbidden: Invalid or missing shutdown session token."}
+            };
+            res.set_content(err.dump(2), "application/json");
+            return;
+        }
+
+        core::Logger::instance().info("Received authorized shutdown request via REST API with valid session token.");
         nlohmann::json response = {
             {"status", "shutting_down"},
             {"message", "Unified Engineering Workbench server is terminating safely."}
         };
         res.set_content(response.dump(2), "application/json");
-        res.set_header("Access-Control-Allow-Origin", "*");
 
         std::thread([this]() {
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            std::this_thread::sleep_for(std::chrono::milliseconds(250));
             this->stop();
         }).detach();
     });
 
     // CORS pre-flight handler
-    m_server->Options(".*", [](const httplib::Request&, httplib::Response& res) {
-        res.set_header("Access-Control-Allow-Origin", "*");
+    m_server->Options(".*", [this](const httplib::Request& req, httplib::Response& res) {
+        std::string origin = req.get_header_value("Origin");
+        if (origin.empty()) {
+            res.set_header("Access-Control-Allow-Origin", "http://127.0.0.1:" + std::to_string(m_actualPort));
+        } else if (origin.find("127.0.0.1") != std::string::npos || origin.find("localhost") != std::string::npos) {
+            res.set_header("Access-Control-Allow-Origin", origin);
+        } else {
+            res.set_header("Access-Control-Allow-Origin", "http://127.0.0.1:" + std::to_string(m_actualPort));
+        }
         res.set_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-        res.set_header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+        res.set_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Session-Token");
         res.status = 204;
     });
 }

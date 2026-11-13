@@ -61,7 +61,7 @@ DeviceTelemetry JtagAdapter::pollTelemetry() {
 
     if (m_faultInjected) {
         telem.state = DeviceState::ErrorTimeout;
-        telem.lastLogMessage = "[TIMEOUT ERROR] JTAG TAP controller timed out waiting for TDO state change. Chain open-circuit.";
+        telem.lastLogMessage = "[TIMEOUT ERROR] USB-MPSSE transaction timed out waiting for TDO response. Peripheral communication bus stalled.";
         telem.crcErrors++;
         return telem;
     }
@@ -112,7 +112,7 @@ DeviceTelemetry JtagAdapter::pollTelemetry() {
         {"bit_slip_errors", 0}
     };
 
-    telem.lastLogMessage = "JTAG scan chain verified (2 TAPs discovered: IDCODE 0x6BA02477 & 0x0362D093).";
+    telem.lastLogMessage = "JTAG MPSSE scan chain verified (2 TAPs discovered: IDCODE 0x6BA02477 & 0x0362D093). Bus active.";
     return telem;
 }
 
@@ -129,7 +129,9 @@ bool JtagAdapter::recoverFault() {
     if (!m_faultInjected && m_state != DeviceState::ErrorTimeout) {
         return false;
     }
-    // Simulate JTAG Test-Logic-Reset (TLR) sequence: 5 clocks with TMS=1, then TMS=0 to Run-Test/Idle
+    // Note: Standard IEEE 1149.1 Test-Logic-Reset (TLR) resets only the TAP controller state machine.
+    // To recover from a hanging peripheral communication timeout, the MPSSE bus controller performs a
+    // hardware bus reset, FIFO buffer flush, link renegotiation, and session reconnect/retry sequence.
     m_faultInjected = false;
     m_lastFaultReason.clear();
     m_currentTapState = "Run-Test/Idle";

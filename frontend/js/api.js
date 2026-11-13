@@ -9,6 +9,7 @@ class WorkbenchApi {
             ? window.location.origin 
             : 'http://127.0.0.1:8080';
         this.timeoutMs = 5000;
+        this.sessionToken = null;
     }
 
     async request(endpoint, options = {}) {
@@ -51,7 +52,11 @@ class WorkbenchApi {
     }
 
     async getSystemInfo() {
-        return this.request('/api/system/info');
+        const res = await this.request('/api/system/info');
+        if (res.success && res.data && res.data.session_token) {
+            this.sessionToken = res.data.session_token;
+        }
+        return res;
     }
 
     async getLogs(limit = 100) {
@@ -59,7 +64,35 @@ class WorkbenchApi {
     }
 
     async shutdown() {
-        return this.request('/api/system/shutdown', { method: 'POST' });
+        return this.request('/api/system/shutdown', {
+            method: 'POST',
+            headers: this.sessionToken ? { 'X-Session-Token': this.sessionToken } : {},
+            body: JSON.stringify({ token: this.sessionToken || '' })
+        });
+    }
+
+    async startBenchmarkJob(config = {}) {
+        return this.request('/api/benchmark/start', {
+            method: 'POST',
+            body: JSON.stringify(config)
+        });
+    }
+
+    async startConvergenceJob(params = {}) {
+        return this.request('/api/thermal/convergence/start', {
+            method: 'POST',
+            body: JSON.stringify(params)
+        });
+    }
+
+    async getJob(jobId) {
+        return this.request(`/api/jobs/${encodeURIComponent(jobId)}`);
+    }
+
+    async cancelJob(jobId) {
+        return this.request(`/api/jobs/${encodeURIComponent(jobId)}/cancel`, {
+            method: 'POST'
+        });
     }
 
     async runPerformanceBenchmark(config = {}) {

@@ -1,4 +1,5 @@
 #include "performance/PerformanceBenchmark.hpp"
+#include "core/SystemInfo.hpp"
 #include <random>
 #include <numeric>
 #include <algorithm>
@@ -71,6 +72,8 @@ nlohmann::json WorkerRunResult::toJson() const {
         {"std_dev_time_ms", std::round(stdDevTimeMs * 10000.0) / 10000.0},
         {"speedup", std::round(speedup * 10000.0) / 10000.0},
         {"efficiency", std::round(efficiency * 10000.0) / 10000.0},
+        {"speedup_assessable", speedupAssessable},
+        {"assessment_note", assessmentNote},
         {"max_temp_diff_vs_serial", maxTempDiffVsSerial},
         {"verified", verified}
     };
@@ -96,14 +99,24 @@ nlohmann::json BenchmarkSuiteResult::toJson() const {
 
 std::string BenchmarkSuiteResult::toCsv() const {
     std::ostringstream ss;
+    auto telem = core::SystemInfoProvider::getTelemetry();
+    ss << "# ===================================================================\n";
     ss << "# Unified Engineering Workbench - Multicore Performance Lab Benchmark Export\n";
     ss << "# Timestamp: " << timestamp << "\n";
+    ss << "# Hardware Audit Metadata:\n";
+    ss << "# Host OS: " << telem.osName << " (" << telem.architecture << ")\n";
+    ss << "# CPU Processor: " << telem.cpuModel << "\n";
+    ss << "# Physical Cores: " << telem.physicalCores << " | Logical Cores: " << telem.logicalCores << "\n";
+    ss << "# Installed RAM: " << (telem.totalRamBytes / (1024 * 1024)) << " MB\n";
+    ss << "# C++ Compiler: " << telem.compiler << "\n";
+    ss << "# Compiler Optimization Flags: " << telem.buildType << "\n";
     ss << "# Simulation Cases: " << config.numCases << ", Mesh Elements per Rod: " << config.numElements << "\n";
     ss << "# PRNG Seed: " << config.randomSeed << ", Repetitions: " << config.repetitions << "\n";
     ss << "# Verification Tolerance: 1.000000e-08 °C\n";
     ss << "# Launch-to-Ready Time: " << launchToReadyMs << " ms\n";
     ss << "# Serial Baseline Median (T1): " << serialBaselineMedianMs << " ms\n";
-    ss << "workers,run1_ms,run2_ms,run3_ms,run4_ms,run5_ms,median_ms,mean_ms,min_ms,max_ms,stddev_ms,speedup,efficiency,max_temp_diff_C,verification_status\n";
+    ss << "# ===================================================================\n";
+    ss << "workers,run1_ms,run2_ms,run3_ms,run4_ms,run5_ms,median_ms,mean_ms,min_ms,max_ms,stddev_ms,speedup,efficiency,max_temp_diff_C,verification_status,assessment_note\n";
     
     for (const auto& w : workerResults) {
         ss << w.workerCount << ",";
@@ -123,7 +136,8 @@ std::string BenchmarkSuiteResult::toCsv() const {
            << std::fixed << std::setprecision(4) << w.speedup << ","
            << std::fixed << std::setprecision(4) << w.efficiency << ","
            << std::scientific << std::setprecision(6) << w.maxTempDiffVsSerial << ","
-           << (w.verified ? "PASS" : "FAIL") << "\n";
+           << (w.verified ? "PASS" : "FAIL") << ","
+           << w.assessmentNote << "\n";
     }
     return ss.str();
 }
@@ -258,11 +272,17 @@ BenchmarkSuiteResult PerformanceBenchmark::runSuite(
     std::strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S UTC", &tmBuffer);
     suite.timestamp = timeStr;
 
-    // Cap worker counts at available logical hardware concurrency
-    const size_t maxConcurrency = std::thread::hardware_concurrency();
+    // Guard std::thread::hardware_concurrency() against returning 0
+    size_t availableCpus = std::thread::hardware_concurrency();
+    if (availableCpus == 0) {
+        availableCpus = 1;
+    }
+
+    // Cap workers at min(4, available_cpus), allowing single-CPU systems to evaluate up to 2 workers gracefully
+    const size_t maxAllowedWorkers = (availableCpus <= 1) ? 2 : std::min<size_t>(4, availableCpus);
     std::vector<size_t> sanitizedWorkers;
     for (auto w : config.workerCounts) {
-        size_t clamped = std::min(w, maxConcurrency);
+        size_t clamped = std::min(w, maxAllowedWorkers);
         if (std::find(sanitizedWorkers.begin(), sanitizedWorkers.end(), clamped) == sanitizedWorkers.end()) {
             sanitizedWorkers.push_back(clamped);
         }
@@ -352,8 +372,17 @@ BenchmarkSuiteResult PerformanceBenchmark::runSuite(
 
     // Compute Speedup and Efficiency relative to T1
     for (auto& wRes : suite.workerResults) {
-        wRes.speedup = (wRes.medianTimeMs > 0.0) ? (t1ReferenceMedianMs / wRes.medianTimeMs) : 1.0;
-        wRes.efficiency = wRes.speedup / static_cast<double>(wRes.workerCount);
+        if (availableCpus <= 1 && wRes.workerCount > 1) {
+            wRes.speedupAssessable = false;
+            wRes.assessmentNote = "speedup_not_assessable";
+            wRes.speedup = (wRes.medianTimeMs > 0.0) ? (t1ReferenceMedianMs / wRes.medianTimeMs) : 1.0;
+            wRes.efficiency = wRes.speedup / static_cast<double>(wRes.workerCount);
+        } else {
+            wRes.speedupAssessable = true;
+            wRes.assessmentNote = "assessable";
+            wRes.speedup = (wRes.medianTimeMs > 0.0) ? (t1ReferenceMedianMs / wRes.medianTimeMs) : 1.0;
+            wRes.efficiency = wRes.speedup / static_cast<double>(wRes.workerCount);
+        }
     }
 
     suite.success = true;

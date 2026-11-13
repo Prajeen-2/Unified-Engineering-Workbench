@@ -47,8 +47,10 @@ struct CsvParseResult {
 
 class CsvParser {
 public:
-    static CsvParseResult parseString(const std::string& csvContent);
-    static CsvParseResult parseFile(const std::string& filePath);
+    static constexpr size_t DEFAULT_MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB default limit
+
+    static CsvParseResult parseString(const std::string& csvContent, size_t maxSizeBytes = DEFAULT_MAX_FILE_SIZE);
+    static CsvParseResult parseFile(const std::string& filePath, size_t maxSizeBytes = DEFAULT_MAX_FILE_SIZE);
 };
 
 } // namespace workbench::geometry

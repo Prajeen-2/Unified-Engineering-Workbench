@@ -133,8 +133,10 @@ struct StlParseResult {
 
 class StlParser {
 public:
-    static StlParseResult parseAsciiString(const std::string& stlContent);
-    static StlParseResult parseAsciiFile(const std::string& filePath);
+    static constexpr size_t DEFAULT_MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB default limit
+
+    static StlParseResult parseAsciiString(const std::string& stlContent, size_t maxSizeBytes = DEFAULT_MAX_FILE_SIZE);
+    static StlParseResult parseAsciiFile(const std::string& filePath, size_t maxSizeBytes = DEFAULT_MAX_FILE_SIZE);
 };
 
 } // namespace workbench::geometry

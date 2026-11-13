@@ -112,13 +112,18 @@ std::string ThermalSolveResult::toCsv() const {
 }
 
 nlohmann::json MeshConvergenceEntry::toJson() const {
+    nlohmann::json profArr = nlohmann::json::array();
+    for (const auto& n : spatialProfile) {
+        profArr.push_back(n.toJson());
+    }
     return nlohmann::json{
         {"num_elements", numElements},
         {"num_nodes", numNodes},
         {"element_length_m", elementLength},
         {"max_midpoint_error_C", maxMidpointError},
         {"theoretical_error_C", theoreticalError},
-        {"convergence_rate", convergenceRate}
+        {"convergence_rate", convergenceRate},
+        {"spatial_profile", profArr}
     };
 }
 
@@ -221,35 +226,73 @@ ThermalSolveResult ThermalSolver1D::solve(const ThermalParameters& params) {
     double A = params.area;
     double q = params.heatGeneration;
 
-    // Element stiffness coefficient: ke = k * A / h
-    double ke = (k * A) / h;
-    // Element load contribution: fe = q * A * h / 2
-    double fe = (q * A * h) / 2.0;
+    // 1. Element-by-element assembly of global stiffness matrix K and global load vector F
+    // For a 1D rod with linear 2-node elements, global K is tridiagonal:
+    // diagK: diagonal [0..N], subK: subdiagonal [1..N], supK: superdiagonal [0..N-1]
+    std::vector<double> diagK(numNodes, 0.0);
+    std::vector<double> subK(numNodes, 0.0);
+    std::vector<double> supK(numNodes, 0.0);
+    std::vector<double> F(numNodes, 0.0);
 
-    // We have N+1 nodes total.
-    // Dirichlet boundary conditions at node 0 (x=0) and node N (x=L):
-    // T_0 = tLeft, T_N = tRight.
-    // Interior system solves for unknown temperatures T_1, T_2, ..., T_{N-1}.
-    // Size of interior system: M = N - 1.
+    for (uint32_t e = 0; e < N; ++e) {
+        uint32_t i = e;
+        uint32_t j = e + 1;
+
+        // Element stiffness: ke = (k * A / h) * [[1, -1], [-1, 1]]
+        double ke = (k * A) / h;
+        // Element load: fe = (q * A * h / 2) * [1, 1]
+        double fe = (q * A * h) / 2.0;
+
+        // Assemble ke into global K
+        diagK[i] += ke;
+        supK[i]  -= ke; // K(i, j)
+        subK[j]  -= ke; // K(j, i)
+        diagK[j] += ke;
+
+        // Assemble fe into global F
+        F[i] += fe;
+        F[j] += fe;
+    }
+
+    // 2. Apply Dirichlet boundary conditions:
+    // T_0 = tLeft, T_N = tRight
+    // Partition system for interior unknown nodal temperatures T_1, ..., T_{N-1}
     size_t M = N - 1;
+    std::vector<double> a(M);
+    std::vector<double> b(M);
+    std::vector<double> c(M);
+    std::vector<double> d(M);
 
-    std::vector<double> a(M, -ke);     // subdiagonal
-    std::vector<double> b(M, 2.0 * ke); // main diagonal
-    std::vector<double> c(M, -ke);     // superdiagonal
-    std::vector<double> d(M, 2.0 * fe); // interior load = fe + fe = q * A * h
+    for (size_t idx = 0; idx < M; ++idx) {
+        size_t node = idx + 1;
+        b[idx] = diagK[node];
+        d[idx] = F[node];
 
-    // Apply Dirichlet boundary contributions to RHS
-    d[0] += ke * params.tLeft;
-    d[M - 1] += ke * params.tRight;
+        if (idx > 0) {
+            a[idx] = subK[node];
+        } else {
+            a[idx] = 0.0;
+            // Subtract boundary contribution from node 0
+            d[idx] -= subK[node] * params.tLeft;
+        }
+
+        if (idx < M - 1) {
+            c[idx] = supK[node];
+        } else {
+            c[idx] = 0.0;
+            // Subtract boundary contribution from node N
+            d[idx] -= supK[node] * params.tRight;
+        }
+    }
 
     std::vector<double> tInterior;
     if (!solveTridiagonal(a, b, c, d, tInterior)) {
         result.success = false;
-        result.errorMessage = "Failed to solve tridiagonal linear finite element system (singular matrix).";
+        result.errorMessage = "Failed to solve assembled linear finite element system.";
         return result;
     }
 
-    // Assemble complete nodal temperature vector [T_0, T_1, ..., T_N]
+    // 3. Assemble complete nodal temperature vector [T_0, T_1, ..., T_N]
     std::vector<double> tNodes(numNodes);
     tNodes[0] = params.tLeft;
     for (size_t i = 0; i < M; ++i) {
@@ -309,6 +352,92 @@ ThermalSolveResult ThermalSolver1D::solve(const ThermalParameters& params) {
     return result;
 }
 
+ThermalSolveResult ThermalSolver1D::solveClosedFormTridiagonal(const ThermalParameters& params) {
+    ThermalSolveResult result;
+    result.parameters = params;
+
+    std::string valErr;
+    if (!params.validate(valErr)) {
+        result.success = false;
+        result.errorMessage = valErr;
+        return result;
+    }
+
+    uint32_t N = params.numElements;
+    uint32_t numNodes = N + 1;
+    double L = params.length;
+    double h = L / static_cast<double>(N);
+    double k = params.conductivity;
+    double A = params.area;
+    double q = params.heatGeneration;
+
+    double ke = (k * A) / h;
+    double fe = (q * A * h) / 2.0;
+
+    size_t M = N - 1;
+    std::vector<double> a(M, -ke);
+    std::vector<double> b(M, 2.0 * ke);
+    std::vector<double> c(M, -ke);
+    std::vector<double> d(M, 2.0 * fe);
+
+    d[0] += ke * params.tLeft;
+    d[M - 1] += ke * params.tRight;
+
+    std::vector<double> tInterior;
+    if (!solveTridiagonal(a, b, c, d, tInterior)) {
+        result.success = false;
+        result.errorMessage = "Failed to solve closed-form tridiagonal system.";
+        return result;
+    }
+
+    std::vector<double> tNodes(numNodes);
+    tNodes[0] = params.tLeft;
+    for (size_t i = 0; i < M; ++i) {
+        tNodes[i + 1] = tInterior[i];
+    }
+    tNodes[N] = params.tRight;
+
+    result.nodes.resize(numNodes);
+    double maxT = -1e30;
+    double xMaxT = 0.0;
+
+    for (uint32_t i = 0; i < numNodes; ++i) {
+        double x = i * h;
+        double tFem = tNodes[i];
+        double tEx = exactTemperature(x, params);
+        double err = std::abs(tFem - tEx);
+
+        result.nodes[i] = {i, x, tFem, tEx, err};
+        if (tFem > maxT) {
+            maxT = tFem;
+            xMaxT = x;
+        }
+    }
+    result.maxTemperature = maxT;
+    result.xAtMaxTemperature = xMaxT;
+
+    result.midpoints.resize(N);
+    double maxMidErr = 0.0;
+    double sumMidErr = 0.0;
+
+    for (uint32_t e = 0; e < N; ++e) {
+        double xMid = (e + 0.5) * h;
+        double tFemMid = 0.5 * (tNodes[e] + tNodes[e + 1]);
+        double tExactMid = exactTemperature(xMid, params);
+        double err = std::abs(tFemMid - tExactMid);
+
+        result.midpoints[e] = {e, xMid, tFemMid, tExactMid, err};
+        if (err > maxMidErr) maxMidErr = err;
+        sumMidErr += err;
+    }
+
+    result.maxMidpointError = maxMidErr;
+    result.meanMidpointError = sumMidErr / static_cast<double>(N);
+    result.theoreticalMaxMidpointError = (q * h * h) / (8.0 * k);
+    result.success = true;
+    return result;
+}
+
 ConvergenceStudyResult ThermalSolver1D::runConvergenceStudy(const ThermalParameters& baseParams,
                                                             const std::vector<uint32_t>& meshSizes) {
     ConvergenceStudyResult studyResult;
@@ -346,7 +475,8 @@ ConvergenceStudyResult ThermalSolver1D::runConvergenceStudy(const ThermalParamet
             currentH,
             currentError,
             theoretical,
-            rate
+            rate,
+            sol.nodes // full spatial profile T(x) with coordinates and errors
         });
 
         prevError = currentError;

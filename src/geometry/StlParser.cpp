@@ -3,6 +3,7 @@
 #include <sstream>
 #include <algorithm>
 #include <cctype>
+#include <filesystem>
 
 namespace workbench::geometry {
 
@@ -57,12 +58,32 @@ nlohmann::json StlParseResult::toJson() const {
     };
 }
 
-StlParseResult StlParser::parseAsciiString(const std::string& stlContent) {
+StlParseResult StlParser::parseAsciiString(const std::string& stlContent, size_t maxSizeBytes) {
     StlParseResult result;
-    if (stlContent.empty()) {
+    if (stlContent.size() > maxSizeBytes) {
         result.success = false;
-        result.errorMessage = "STL content is empty.";
+        result.errorMessage = "STL content size (" + std::to_string(stlContent.size()) +
+                              " bytes) exceeds maximum allowable limit of " +
+                              std::to_string(maxSizeBytes) + " bytes (50 MB).";
         return result;
+    }
+
+    if (stlContent.empty() || trim(stlContent).empty()) {
+        result.success = false;
+        result.errorMessage = "File is empty (0 bytes or whitespace only).";
+        return result;
+    }
+
+    // Binary STL detection: check for null bytes '\0' or non-printable binary control characters
+    size_t inspectLen = std::min<size_t>(stlContent.size(), 2048);
+    for (size_t i = 0; i < inspectLen; ++i) {
+        unsigned char c = static_cast<unsigned char>(stlContent[i]);
+        if (c == '\0' || (c < 32 && c != '\t' && c != '\r' && c != '\n')) {
+            result.success = false;
+            result.errorMessage = "Detected binary STL format (contains binary/null characters). "
+                                  "Unified Engineering Workbench requires standard ASCII STL format.";
+            return result;
+        }
     }
 
     std::istringstream stream(stlContent);
@@ -246,9 +267,31 @@ StlParseResult StlParser::parseAsciiString(const std::string& stlContent) {
     return result;
 }
 
-StlParseResult StlParser::parseAsciiFile(const std::string& filePath) {
+StlParseResult StlParser::parseAsciiFile(const std::string& filePath, size_t maxSizeBytes) {
     StlParseResult result;
-    std::ifstream file(filePath);
+    std::error_code ec;
+    if (!std::filesystem::exists(filePath, ec)) {
+        result.success = false;
+        result.errorMessage = "Unable to open STL file: " + filePath + " (file does not exist).";
+        return result;
+    }
+
+    auto fileSize = std::filesystem::file_size(filePath, ec);
+    if (!ec && fileSize > maxSizeBytes) {
+        result.success = false;
+        result.errorMessage = "STL file size (" + std::to_string(fileSize) +
+                              " bytes) exceeds maximum allowable limit of " +
+                              std::to_string(maxSizeBytes) + " bytes (50 MB).";
+        return result;
+    }
+
+    if (!ec && fileSize == 0) {
+        result.success = false;
+        result.errorMessage = "File is empty (0 bytes or whitespace only).";
+        return result;
+    }
+
+    std::ifstream file(filePath, std::ios::binary);
     if (!file.is_open()) {
         result.success = false;
         result.errorMessage = "Unable to open STL file: " + filePath;
@@ -257,7 +300,7 @@ StlParseResult StlParser::parseAsciiFile(const std::string& filePath) {
 
     std::stringstream buffer;
     buffer << file.rdbuf();
-    return parseAsciiString(buffer.str());
+    return parseAsciiString(buffer.str(), maxSizeBytes);
 }
 
 } // namespace workbench::geometry

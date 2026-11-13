@@ -16,7 +16,7 @@ if(MSVC)
     if(CMAKE_BUILD_TYPE STREQUAL "Release" OR NOT CMAKE_BUILD_TYPE)
         add_compile_options(/O2 /Oi /Ot /Gy)
     endif()
-    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS -DNOMINMAX -DWIN32_LEAN_AND_MEAN)
 else()
     add_compile_options(-Wall -Wextra -pedantic)
     if(CMAKE_BUILD_TYPE STREQUAL "Release" OR NOT CMAKE_BUILD_TYPE)
@@ -109,6 +109,8 @@ add_executable(test_performance
     src/performance/ThreadPool.cpp
     src/performance/PerformanceBenchmark.cpp
     src/thermal/ThermalSolver1D.cpp
+    src/core/SystemInfo.cpp
+    src/core/Logger.cpp
 )
 add_test(NAME PerformanceBenchmarkTests COMMAND test_performance)
 

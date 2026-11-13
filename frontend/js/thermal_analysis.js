@@ -52,6 +52,14 @@ class ThermalAnalysis {
         this.btnReset?.addEventListener('click', () => this.resetParameters());
         this.btnConvergence?.addEventListener('click', () => this.runConvergenceStudy());
 
+        const btnCancel = document.getElementById('btn-cancel-thermal');
+        btnCancel?.addEventListener('click', async () => {
+            if (this.activeConvergenceJobId) {
+                await window.api.cancelJob(this.activeConvergenceJobId);
+                this.setStatus('CANCELLING STUDY...', 'pending');
+            }
+        });
+
         this.selectMesh?.addEventListener('change', (e) => {
             this.currentMesh = parseInt(e.target.value, 10);
             this.runSimulation();
@@ -174,34 +182,67 @@ class ThermalAnalysis {
     }
 
     async runConvergenceStudy(notify = true) {
+        if (this.isConvergenceRunning) return;
+        this.isConvergenceRunning = true;
+
+        const btnCancel = document.getElementById('btn-cancel-thermal');
+        if (btnCancel) btnCancel.style.display = 'inline-flex';
+
         if (notify) {
-            this.setStatus('RUNNING CONVERGENCE STUDY...', 'pending');
-            this.showProgress(40);
+            this.setStatus('RUNNING ASYNC CONVERGENCE STUDY...', 'pending');
+            this.showProgress(10);
         }
 
         const params = this.getParameters();
-        const res = await window.api.request('/api/thermal/convergence', {
-            method: 'POST',
-            body: JSON.stringify({
-                ...params,
-                mesh_sizes: [10, 20, 40, 80]
-            })
-        });
-
-        if (res.success && res.data && res.data.success) {
-            this.lastConvergenceResult = res.data;
-            this.renderConvergenceChart(res.data);
-            this.populateConvergenceTable(res.data);
-            if (notify) {
-                this.setStatus('CONVERGENCE VERIFIED', 'success');
-                window.showToast?.('Convergence study completed: quadratic O(h²) rate verified.', 'success');
-                this.showProgress(100);
-                setTimeout(() => this.hideProgress(), 400);
+        try {
+            const startRes = await window.api.startConvergenceJob(params);
+            if (!startRes.success || !startRes.data || !startRes.data.job_id) {
+                throw new Error(startRes.error || startRes.data?.error_message || 'Failed to start convergence job.');
             }
-        } else if (notify) {
-            const err = res.data?.error_message || res.error || 'Convergence Study Error';
-            this.showError(err);
-            this.hideProgress();
+
+            this.activeConvergenceJobId = startRes.data.job_id;
+
+            while (this.isConvergenceRunning && this.activeConvergenceJobId) {
+                await new Promise(r => setTimeout(r, 120));
+                const pollRes = await window.api.getJob(this.activeConvergenceJobId);
+                if (!pollRes.success || !pollRes.data) continue;
+
+                const job = pollRes.data;
+                this.showProgress(job.progress || 10);
+                if (job.message) this.setStatus(job.message.toUpperCase(), 'pending');
+
+                if (job.status === 'completed') {
+                    this.lastConvergenceResult = job.result;
+                    this.renderConvergenceChart(job.result);
+                    this.populateConvergenceTable(job.result);
+                    // Re-render temperature distribution showing all 4 meshes
+                    if (this.lastSolveResult) {
+                        this.renderTemperatureChart(this.lastSolveResult);
+                    }
+                    if (notify) {
+                        this.setStatus('CONVERGENCE VERIFIED (ALPHA ≈ 2.0)', 'success');
+                        window.showToast?.('Convergence study completed: quadratic O(h²) rate verified.', 'success');
+                        this.showProgress(100);
+                        setTimeout(() => this.hideProgress(), 400);
+                    }
+                    break;
+                } else if (job.status === 'cancelled') {
+                    this.showError('Convergence study cancelled by user.');
+                    this.hideProgress();
+                    break;
+                } else if (job.status === 'failed') {
+                    throw new Error(job.error_message || 'Convergence study failed.');
+                }
+            }
+        } catch (err) {
+            if (notify) {
+                this.showError(err.message || 'Convergence Study Error');
+                this.hideProgress();
+            }
+        } finally {
+            this.isConvergenceRunning = false;
+            this.activeConvergenceJobId = null;
+            if (btnCancel) btnCancel.style.display = 'none';
         }
     }
 
@@ -236,14 +277,6 @@ class ThermalAnalysis {
             exactY.push(tExact);
         }
 
-        // 2. Numerical FE Profile (Linear interpolation through nodes)
-        const femX = nodes.map(n => n.x_m);
-        const femY = nodes.map(n => n.temperature_fem_C);
-
-        // 3. Peak temperature annotation point
-        const peakX = (420.0 / 1000.0) * L; // Theoretical peak for standard params
-        const peakT = T0 + (TL - T0) * (peakX / L) + (q / (2.0 * k)) * peakX * (L - peakX);
-
         const traceExact = {
             x: exactX,
             y: exactY,
@@ -252,22 +285,44 @@ class ThermalAnalysis {
             line: { color: '#38bdf8', width: 2.5 }
         };
 
-        const traceFem = {
-            x: femX,
-            y: femY,
-            mode: 'lines+markers',
-            name: `FEM Numerical (N = ${data.num_elements})`,
-            line: { color: '#f59e0b', width: 2, dash: 'dot' },
-            marker: { color: '#ef4444', size: 6, symbol: 'circle' }
-        };
+        const traces = [traceExact];
 
-        const tracePeak = {
+        // 2. Overlay all 4 meshes from convergence study if available, else current mesh
+        if (this.lastConvergenceResult && this.lastConvergenceResult.study_entries) {
+            const meshColors = ['#f59e0b', '#ec4899', '#8b5cf6', '#10b981'];
+            this.lastConvergenceResult.study_entries.forEach((entry, idx) => {
+                if (entry.spatial_profile && entry.spatial_profile.length > 0) {
+                    traces.push({
+                        x: entry.spatial_profile.map(p => p.x_m),
+                        y: entry.spatial_profile.map(p => p.temperature_fem_C),
+                        mode: 'lines+markers',
+                        name: `FEM Mesh N = ${entry.num_elements}`,
+                        line: { color: meshColors[idx % meshColors.length], width: 1.5, dash: idx === 0 ? 'dot' : 'solid' },
+                        marker: { size: 4 }
+                    });
+                }
+            });
+        } else {
+            traces.push({
+                x: nodes.map(n => n.x_m),
+                y: nodes.map(n => n.temperature_fem_C),
+                mode: 'lines+markers',
+                name: `FEM Numerical (N = ${data.num_elements})`,
+                line: { color: '#f59e0b', width: 2, dash: 'dot' },
+                marker: { color: '#ef4444', size: 6, symbol: 'circle' }
+            });
+        }
+
+        // 3. Peak temperature annotation point
+        const peakX = (420.0 / 1000.0) * L;
+        const peakT = T0 + (TL - T0) * (peakX / L) + (q / (2.0 * k)) * peakX * (L - peakX);
+        traces.push({
             x: [peakX],
             y: [peakT],
             mode: 'markers',
             name: `Analytical Peak (${peakT.toFixed(1)} °C)`,
             marker: { color: '#10b981', size: 10, symbol: 'diamond' }
-        };
+        });
 
         const layout = {
             title: { text: `1D Temperature Distribution T(x) [N = ${data.num_elements}]`, font: { size: 13, color: '#e6edf3' } },

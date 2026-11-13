@@ -1,5 +1,7 @@
 #if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #include <shellapi.h>
 #endif
@@ -49,7 +51,18 @@ int main(int argc, char* argv[]) {
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg == "--port" && i + 1 < argc) {
-            port = std::stoi(argv[++i]);
+            std::string portArg = argv[++i];
+            try {
+                size_t pos = 0;
+                int parsed = std::stoi(portArg, &pos);
+                if (pos == portArg.size() && parsed > 0 && parsed <= 65535) {
+                    port = parsed;
+                } else {
+                    logger.error("Invalid port specified: '" + portArg + "'. Using default 8080.");
+                }
+            } catch (const std::exception&) {
+                logger.error("Non-numeric port argument: '" + portArg + "'. Using default 8080.");
+            }
         } else if (arg == "--host" && i + 1 < argc) {
             host = argv[++i];
         } else if (arg == "--no-browser") {

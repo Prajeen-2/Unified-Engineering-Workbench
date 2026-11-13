@@ -41,3 +41,4 @@ exit /b %ERRORLEVEL%
 :no_ctest
 echo [ERROR] Could not initialize environment for ctest.exe.
 exit /b 1
+

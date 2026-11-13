@@ -388,6 +388,7 @@
                             <span class="metric-pill pill-success" id="thermal-status-badge">READY</span>
                             <button class="btn-primary" id="btn-run-thermal">Run Simulation</button>
                             <button class="btn-secondary" id="btn-run-convergence">Run Convergence Study</button>
+                            <button class="btn-control" id="btn-cancel-thermal" style="display:none; border-color:var(--accent-red); color:var(--accent-red);">Cancel Study</button>
                         </div>
                     </div>
                     <div class="progress-bar-container" id="thermal-progress-bar">
@@ -667,6 +668,7 @@
                             <button class="btn-primary" id="btn-run-perf-benchmark">
                                 <span id="perf-btn-label">Run Multicore Benchmark</span>
                             </button>
+                            <button class="btn-control" id="btn-cancel-perf-benchmark" style="display: none; border-color: var(--accent-red); color: var(--accent-red);">Cancel Benchmark</button>
                             <button class="btn-control" id="btn-reset-perf-benchmark">Reset Defaults</button>
                             <button class="btn-control" id="btn-export-perf-csv">Export Benchmark CSV</button>
                         </div>
@@ -886,7 +888,7 @@
                         <div>
                             <div class="device-card-header">
                                 <div>
-                                    <div class="device-title">STM32H753ZI Microcontroller</div>
+                                    <div class="device-title">STM32H753ZI Microcontroller <span class="metric-pill pill-purple" style="font-size: 9px; padding: 1px 6px;">[SIMULATED]</span></div>
                                     <div class="device-subtitle">ARM Cortex-M7 @ 480 MHz &bull; 3.3V Domain</div>
                                 </div>
                                 <span class="metric-pill pill-success" id="mcu-status-pill">STREAMING</span>
@@ -939,7 +941,7 @@
                         <div>
                             <div class="device-card-header">
                                 <div>
-                                    <div class="device-title">Xilinx Artix-7 XC7A100T</div>
+                                    <div class="device-title">Xilinx Artix-7 XC7A100T <span class="metric-pill pill-purple" style="font-size: 9px; padding: 1px 6px;">[SIMULATED]</span></div>
                                     <div class="device-subtitle">Triple-Rail Fabric &bull; FT232H Synchronous FIFO</div>
                                 </div>
                                 <span class="metric-pill pill-success" id="fpga-status-pill">STREAMING</span>
@@ -992,7 +994,7 @@
                         <div>
                             <div class="device-card-header">
                                 <div>
-                                    <div class="device-title">FT2232H JTAG Debug Probe</div>
+                                    <div class="device-title">FT2232H JTAG Debug Probe <span class="metric-pill pill-purple" style="font-size: 9px; padding: 1px 6px;">[SIMULATED]</span></div>
                                     <div class="device-subtitle">MPSSE Engine &bull; Multi-Drop Boundary Scan Chain</div>
                                 </div>
                                 <span class="metric-pill pill-success" id="jtag-status-pill">STREAMING</span>
@@ -1033,7 +1035,7 @@
                             <div class="device-actions">
                                 <button class="btn-control" id="btn-jtag-toggle">Disconnect</button>
                                 <button class="btn-fault" id="btn-jtag-fault">Inject Chain Break Fault</button>
-                                <button class="btn-recover" id="btn-jtag-recover">TLR Sequence Recover</button>
+                                <button class="btn-recover" id="btn-jtag-recover">Bus Reset / Reconnect</button>
                             </div>
                         </div>
                     </div>

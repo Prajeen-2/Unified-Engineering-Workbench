@@ -32,6 +32,8 @@ struct WorkerRunResult {
     double stdDevTimeMs{0.0};                     // Standard deviation of execution times
     double speedup{1.0};                          // Speedup metric: S_p = T_1 / T_p
     double efficiency{1.0};                       // Parallel efficiency: E_p = S_p / p
+    bool speedupAssessable{true};                 // False in single-CPU environments when p > 1
+    std::string assessmentNote{"assessable"};     // "assessable" or "speedup_not_assessable"
     double maxTempDiffVsSerial{0.0};              // Maximum absolute nodal temperature discrepancy vs serial [°C]
     bool verified{true};                          // Strict verification against 1e-8 °C tolerance
 

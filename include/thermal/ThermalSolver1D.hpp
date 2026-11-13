@@ -65,6 +65,7 @@ struct MeshConvergenceEntry {
     double maxMidpointError{0.0};   // Observed max midpoint error [°C]
     double theoreticalError{0.0};   // Theoretical q*h² / (8k) [°C]
     double convergenceRate{0.0};    // Order of convergence alpha: log(E1/E2) / log(h1/h2)
+    std::vector<ThermalNodeResult> spatialProfile; // Full T(x) spatial nodal profile for plotting
 
     nlohmann::json toJson() const;
 };
@@ -81,7 +82,12 @@ struct ConvergenceStudyResult {
 
 class ThermalSolver1D {
 public:
+    // Primary solver: performs element-wise assembly of global K and F, applies Dirichlet BCs, and solves
     static ThermalSolveResult solve(const ThermalParameters& params);
+
+    // Reference solver: closed-form tridiagonal interior solver (used for machine-precision regression verification)
+    static ThermalSolveResult solveClosedFormTridiagonal(const ThermalParameters& params);
+
     static ConvergenceStudyResult runConvergenceStudy(const ThermalParameters& baseParams,
                                                       const std::vector<uint32_t>& meshSizes = {10, 20, 40, 80});
     static double exactTemperature(double x, const ThermalParameters& params);

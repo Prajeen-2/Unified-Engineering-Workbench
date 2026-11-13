@@ -153,6 +153,50 @@ bool testInvalidParameterRejection() {
     return true;
 }
 
+bool testAssemblyMatchesClosedFormTridiagonal() {
+    workbench::thermal::ThermalParameters params;
+    params.length = 1.0;
+    params.area = 1e-4;
+    params.conductivity = 10.0;
+    params.heatGeneration = 10000.0;
+    params.tLeft = 100.0;
+    params.tRight = 20.0;
+
+    std::vector<uint32_t> testMeshes = {10, 20, 40, 80};
+    for (uint32_t N : testMeshes) {
+        params.numElements = N;
+        auto assembled = workbench::thermal::ThermalSolver1D::solve(params);
+        auto closedForm = workbench::thermal::ThermalSolver1D::solveClosedFormTridiagonal(params);
+
+        ASSERT_TRUE(assembled.success, "Assembled solver must succeed");
+        ASSERT_TRUE(closedForm.success, "Closed-form solver must succeed");
+        ASSERT_TRUE(assembled.nodes.size() == closedForm.nodes.size(), "Node count mismatch");
+
+        for (size_t i = 0; i < assembled.nodes.size(); ++i) {
+            ASSERT_NEAR(assembled.nodes[i].tFem, closedForm.nodes[i].tFem, 1e-12,
+                        "Assembled FEM vs closed-form tridiagonal solution must match to machine precision");
+        }
+
+        ASSERT_NEAR(assembled.maxMidpointError, closedForm.maxMidpointError, 1e-12,
+                    "Max midpoint error between assembly and closed-form must match to machine precision");
+    }
+
+    // Also verify that convergence study entries include full spatial profiles
+    auto study = workbench::thermal::ThermalSolver1D::runConvergenceStudy(params, testMeshes);
+    ASSERT_TRUE(study.success, "Study must succeed");
+    for (const auto& entry : study.entries) {
+        ASSERT_TRUE(!entry.spatialProfile.empty(), "Spatial profile must be populated");
+        ASSERT_TRUE(entry.spatialProfile.size() == entry.numNodes, "Spatial profile size must equal node count");
+        for (const auto& pt : entry.spatialProfile) {
+            ASSERT_TRUE(std::isfinite(pt.x), "x coordinate must be finite");
+            ASSERT_TRUE(std::isfinite(pt.tFem), "T_fem must be finite");
+        }
+    }
+
+    std::cout << "  [PASS] testAssemblyMatchesClosedFormTridiagonal (Matched to <1e-12 C across N=10,20,40,80)\n";
+    return true;
+}
+
 int main() {
     std::cout << "========================================================\n";
     std::cout << "   RUNNING TASK C 1D THERMAL FEM SOLVER UNIT TESTS      \n";
@@ -163,10 +207,11 @@ int main() {
     allPassed &= testMeshConvergenceRate();
     allPassed &= testMidpointInterpolationAccuracy();
     allPassed &= testInvalidParameterRejection();
+    allPassed &= testAssemblyMatchesClosedFormTridiagonal();
 
     std::cout << "========================================================\n";
     if (allPassed) {
-        std::cout << "   ALL TASK C THERMAL FEM UNIT TESTS PASSED (4/4)      \n";
+        std::cout << "   ALL TASK C THERMAL FEM UNIT TESTS PASSED (5/5)      \n";
         std::cout << "========================================================\n";
         return 0;
     } else {

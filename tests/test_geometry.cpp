@@ -151,6 +151,65 @@ bool testBelowAbsoluteZeroCsv() {
     return true;
 }
 
+bool testEmptyFileRejection() {
+    auto resStl = workbench::geometry::StlParser::parseAsciiString("");
+    ASSERT_FALSE(resStl.success, "Empty STL string must be rejected");
+    ASSERT_TRUE(resStl.errorMessage.find("empty") != std::string::npos, "Error message must state empty file");
+
+    auto resStlWs = workbench::geometry::StlParser::parseAsciiString("   \n\t  \r\n ");
+    ASSERT_FALSE(resStlWs.success, "Whitespace-only STL string must be rejected");
+
+    auto resCsv = workbench::geometry::CsvParser::parseString("");
+    ASSERT_FALSE(resCsv.success, "Empty CSV string must be rejected");
+    ASSERT_TRUE(resCsv.errorMessage.find("empty") != std::string::npos, "Error message must state empty file");
+
+    std::cout << "  [PASS] testEmptyFileRejection\n";
+    return true;
+}
+
+bool testHeaderOnlyCsvRejection() {
+    std::string headerOnly = "node_id,x_m,y_m,z_m,temperature_C\n";
+    auto res = workbench::geometry::CsvParser::parseString(headerOnly);
+    ASSERT_FALSE(res.success, "Header-only CSV without data rows must be rejected");
+    ASSERT_TRUE(res.errorMessage.find("header-only CSV") != std::string::npos,
+                "Error message must specify header-only CSV condition");
+    std::cout << "  [PASS] testHeaderOnlyCsvRejection: " << res.errorMessage << "\n";
+    return true;
+}
+
+bool testBinaryStlDetection() {
+    // Binary STL with ASCII-like header: 80 bytes starting with "solid BinaryModel" followed by null bytes and binary data
+    std::string binStl(120, '\0');
+    std::string header = "solid BinaryModelCADExportHeaderWith80BytesPadding";
+    std::copy(header.begin(), header.end(), binStl.begin());
+    // Put non-zero binary bytes after 80-byte header
+    binStl[80] = 0x02; binStl[81] = 0x00; binStl[82] = 0x00; binStl[83] = 0x00; // 2 triangles
+
+    auto res = workbench::geometry::StlParser::parseAsciiString(binStl);
+    ASSERT_FALSE(res.success, "Binary STL with null bytes must be rejected");
+    ASSERT_TRUE(res.errorMessage.find("Detected binary STL format") != std::string::npos,
+                "Error message must state binary STL format detected");
+    std::cout << "  [PASS] testBinaryStlDetection: " << res.errorMessage << "\n";
+    return true;
+}
+
+bool testOversizedFileLimit() {
+    std::string smallContent = "solid Test\n  facet normal 0 0 1\n    outer loop\n      vertex 0 0 0\n      vertex 1 0 0\n      vertex 0 1 0\n    endloop\n  endfacet\nendsolid Test\n";
+    // Enforce 10-byte limit
+    auto resStl = workbench::geometry::StlParser::parseAsciiString(smallContent, 10);
+    ASSERT_FALSE(resStl.success, "Content exceeding size limit must be rejected");
+    ASSERT_TRUE(resStl.errorMessage.find("exceeds maximum allowable limit") != std::string::npos,
+                "Error message must state size limit exceeded");
+
+    auto resCsv = workbench::geometry::CsvParser::parseString("node_id,x,y,z,temperature\n1,0,0,0,25\n", 10);
+    ASSERT_FALSE(resCsv.success, "CSV exceeding size limit must be rejected");
+    ASSERT_TRUE(resCsv.errorMessage.find("exceeds maximum allowable limit") != std::string::npos,
+                "Error message must state size limit exceeded");
+
+    std::cout << "  [PASS] testOversizedFileLimit\n";
+    return true;
+}
+
 int main() {
     std::cout << "========================================================\n";
     std::cout << "   RUNNING TASK B GEOMETRY & CSV VERIFICATION TESTS     \n";
@@ -166,10 +225,14 @@ int main() {
     allPassed &= testNonFiniteCsvCoordinates();
     allPassed &= testNonFiniteCsvTemperature();
     allPassed &= testBelowAbsoluteZeroCsv();
+    allPassed &= testEmptyFileRejection();
+    allPassed &= testHeaderOnlyCsvRejection();
+    allPassed &= testBinaryStlDetection();
+    allPassed &= testOversizedFileLimit();
 
     std::cout << "========================================================\n";
     if (allPassed) {
-        std::cout << "   ALL TASK B GEOMETRY & CSV UNIT TESTS PASSED (9/9)    \n";
+        std::cout << "   ALL TASK B GEOMETRY & CSV UNIT TESTS PASSED (13/13)  \n";
         std::cout << "========================================================\n";
         return 0;
     } else {
