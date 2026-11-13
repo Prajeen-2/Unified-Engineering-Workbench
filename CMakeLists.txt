@@ -35,6 +35,10 @@ set(CORE_SOURCES
     src/thermal/ThermalSolver1D.cpp
     src/performance/ThreadPool.cpp
     src/performance/PerformanceBenchmark.cpp
+    src/hardware/McuDeviceAdapter.cpp
+    src/hardware/FpgaDeviceAdapter.cpp
+    src/hardware/JtagAdapter.cpp
+    src/hardware/HardwareManager.cpp
 )
 
 # Main server executable
@@ -100,4 +104,13 @@ add_executable(test_performance
     src/thermal/ThermalSolver1D.cpp
 )
 add_test(NAME PerformanceBenchmarkTests COMMAND test_performance)
+
+add_executable(test_hardware
+    tests/test_hardware.cpp
+    src/hardware/McuDeviceAdapter.cpp
+    src/hardware/FpgaDeviceAdapter.cpp
+    src/hardware/JtagAdapter.cpp
+    src/hardware/HardwareManager.cpp
+)
+add_test(NAME HardwareIntegrationTests COMMAND test_hardware)
 

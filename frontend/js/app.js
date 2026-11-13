@@ -49,6 +49,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (targetModule === 'performance' && window.performanceLab) {
             window.performanceLab.resizeCharts();
         }
+        if (targetModule === 'hardware' && window.hardwareIntegration) {
+            window.hardwareIntegration.resizeCharts();
+        }
     };
 
     navItems.forEach(item => {

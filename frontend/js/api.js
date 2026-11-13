@@ -77,6 +77,47 @@ class WorkbenchApi {
         if (config.repetitions) params.set('repetitions', config.repetitions);
         return `${this.baseUrl}/api/performance/export-csv?${params.toString()}`;
     }
+
+    // Hardware Integration API Endpoints (Task E)
+    async getHardwareDevices() {
+        return this.request('/api/hardware/devices');
+    }
+
+    async getHardwareTelemetry() {
+        return this.request('/api/hardware/telemetry');
+    }
+
+    async getHardwareArchitecture() {
+        return this.request('/api/hardware/architecture');
+    }
+
+    async connectHardwareDevice(deviceId = 'all') {
+        return this.request('/api/hardware/connect', {
+            method: 'POST',
+            body: JSON.stringify({ device_id: deviceId })
+        });
+    }
+
+    async disconnectHardwareDevice(deviceId = 'all') {
+        return this.request('/api/hardware/disconnect', {
+            method: 'POST',
+            body: JSON.stringify({ device_id: deviceId })
+        });
+    }
+
+    async injectHardwareFault(deviceId, faultType = 'timeout') {
+        return this.request('/api/hardware/fault-inject', {
+            method: 'POST',
+            body: JSON.stringify({ device_id: deviceId, fault_type: faultType })
+        });
+    }
+
+    async recoverHardwareFault(deviceId) {
+        return this.request('/api/hardware/fault-recover', {
+            method: 'POST',
+            body: JSON.stringify({ device_id: deviceId })
+        });
+    }
 }
 
 window.api = new WorkbenchApi();

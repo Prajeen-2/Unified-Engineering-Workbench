@@ -13,6 +13,7 @@
 #include "thermal/ThermalSolver1D.hpp"
 #include "performance/ThreadPool.hpp"
 #include "performance/PerformanceBenchmark.hpp"
+#include "hardware/HardwareManager.hpp"
 #include "httplib/httplib.h"
 #include "nlohmann/json.hpp"
 #include <filesystem>
@@ -295,6 +296,119 @@ void HttpServer::setupRoutes() {
 
         res.set_content(suiteResult.toCsv(), "text/csv");
         res.set_header("Content-Disposition", "attachment; filename=\"multicore_benchmark_results.csv\"");
+        res.set_header("Access-Control-Allow-Origin", "*");
+    });
+
+    // Hardware Integration Endpoints (Task E)
+    m_server->Get("/api/hardware/devices", [](const httplib::Request&, httplib::Response& res) {
+        auto devices = hardware::HardwareManager::instance().getDiscoveredDevices();
+        nlohmann::json jList = nlohmann::json::array();
+        for (const auto& dev : devices) {
+            jList.push_back(dev.toJson());
+        }
+        nlohmann::json response = {
+            {"success", true},
+            {"count", jList.size()},
+            {"devices", jList}
+        };
+        res.set_content(response.dump(2), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
+    });
+
+    m_server->Get("/api/hardware/telemetry", [](const httplib::Request&, httplib::Response& res) {
+        auto telem = hardware::HardwareManager::instance().getAllTelemetry();
+        res.set_content(telem.dump(2), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
+    });
+
+    m_server->Get("/api/hardware/architecture", [](const httplib::Request&, httplib::Response& res) {
+        auto arch = hardware::HardwareManager::getSystemElectricalArchitecture();
+        res.set_content(arch.dump(2), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
+    });
+
+    m_server->Post("/api/hardware/connect", [](const httplib::Request& req, httplib::Response& res) {
+        std::string deviceId;
+        if (!req.body.empty()) {
+            try {
+                auto j = nlohmann::json::parse(req.body);
+                if (j.contains("device_id")) deviceId = j["device_id"].get<std::string>();
+            } catch (...) {}
+        }
+        bool ok = false;
+        if (deviceId.empty() || deviceId == "all") {
+            ok = hardware::HardwareManager::instance().connectAll();
+        } else {
+            ok = hardware::HardwareManager::instance().connectDevice(deviceId);
+        }
+        nlohmann::json response = {
+            {"success", ok},
+            {"device_id", deviceId.empty() ? "all" : deviceId},
+            {"message", ok ? "Device(s) connected successfully." : "Connection failed."}
+        };
+        res.set_content(response.dump(2), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
+    });
+
+    m_server->Post("/api/hardware/disconnect", [](const httplib::Request& req, httplib::Response& res) {
+        std::string deviceId;
+        if (!req.body.empty()) {
+            try {
+                auto j = nlohmann::json::parse(req.body);
+                if (j.contains("device_id")) deviceId = j["device_id"].get<std::string>();
+            } catch (...) {}
+        }
+        bool ok = false;
+        if (deviceId.empty() || deviceId == "all") {
+            ok = hardware::HardwareManager::instance().disconnectAll();
+        } else {
+            ok = hardware::HardwareManager::instance().disconnectDevice(deviceId);
+        }
+        nlohmann::json response = {
+            {"success", ok},
+            {"device_id", deviceId.empty() ? "all" : deviceId},
+            {"message", ok ? "Device(s) disconnected." : "Disconnect failed."}
+        };
+        res.set_content(response.dump(2), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
+    });
+
+    m_server->Post("/api/hardware/fault-inject", [](const httplib::Request& req, httplib::Response& res) {
+        std::string deviceId = "mcu_stm32h7";
+        std::string faultType = "timeout";
+        if (!req.body.empty()) {
+            try {
+                auto j = nlohmann::json::parse(req.body);
+                if (j.contains("device_id")) deviceId = j["device_id"].get<std::string>();
+                if (j.contains("fault_type")) faultType = j["fault_type"].get<std::string>();
+            } catch (...) {}
+        }
+        bool ok = hardware::HardwareManager::instance().injectFault(deviceId, faultType);
+        nlohmann::json response = {
+            {"success", ok},
+            {"device_id", deviceId},
+            {"fault_type", faultType},
+            {"message", ok ? "Fault injected successfully." : "Failed to inject fault (device not found)."}
+        };
+        res.set_content(response.dump(2), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
+    });
+
+    m_server->Post("/api/hardware/fault-recover", [](const httplib::Request& req, httplib::Response& res) {
+        std::string deviceId = "mcu_stm32h7";
+        if (!req.body.empty()) {
+            try {
+                auto j = nlohmann::json::parse(req.body);
+                if (j.contains("device_id")) deviceId = j["device_id"].get<std::string>();
+            } catch (...) {}
+        }
+        bool ok = hardware::HardwareManager::instance().recoverFault(deviceId);
+        nlohmann::json response = {
+            {"success", ok},
+            {"device_id", deviceId},
+            {"message", ok ? "Fault recovered successfully. Device operational." : "Recovery failed (device not in fault state)."}
+        };
+        res.set_content(response.dump(2), "application/json");
         res.set_header("Access-Control-Allow-Origin", "*");
     });
 

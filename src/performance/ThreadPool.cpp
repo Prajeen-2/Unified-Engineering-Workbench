@@ -65,3 +65,4 @@ void ThreadPool::waitAll() {
 }
 
 } // namespace workbench::performance
+
