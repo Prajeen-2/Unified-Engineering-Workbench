@@ -148,6 +148,23 @@ class WorkbenchApi {
         if (config.max_tolerance !== undefined) params.set('tol', config.max_tolerance);
         return `${this.baseUrl}/api/neural/export-csv?${params.toString()}`;
     }
+
+    // Reports & Exports API Endpoints (Task G)
+    getHardwareExportCsvUrl() {
+        return `${this.baseUrl}/api/hardware/export-csv`;
+    }
+
+    getLogsExportUrl() {
+        return `${this.baseUrl}/api/logs/export`;
+    }
+
+    getReportDocumentUrl(filename) {
+        return `${this.baseUrl}/api/reports/download?file=${encodeURIComponent(filename)}`;
+    }
+
+    async getReportsSummary() {
+        return this.request('/api/reports/summary');
+    }
 }
 
 window.api = new WorkbenchApi();

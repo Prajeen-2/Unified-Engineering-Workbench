@@ -324,3 +324,4 @@ TrainingResult NeuralNetRegression::train(const TrainingConfig& config) {
 }
 
 } // namespace workbench::neural
+

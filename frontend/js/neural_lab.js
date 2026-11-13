@@ -438,3 +438,4 @@ class NeuralLabController {
 document.addEventListener('DOMContentLoaded', () => {
     window.neuralLab = new NeuralLabController();
 });
+
