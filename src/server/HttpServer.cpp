@@ -116,6 +116,69 @@ void HttpServer::setupRoutes() {
         res.set_header("Access-Control-Allow-Origin", "*");
     });
 
+    // Clear Logs Endpoint (Settings Module)
+    m_server->Post("/api/logs/clear", [](const httplib::Request&, httplib::Response& res) {
+        core::Logger::instance().clear();
+        core::Logger::instance().info("In-memory log ring buffer cleared via Settings module.");
+        nlohmann::json response = {
+            {"success", true},
+            {"message", "In-memory log buffer cleared successfully."}
+        };
+        res.set_content(response.dump(2), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
+    });
+
+    // Comprehensive Settings & Diagnostics Metadata Endpoint
+    m_server->Get("/api/system/settings", [this](const httplib::Request&, httplib::Response& res) {
+        auto telemetry = core::SystemInfoProvider::getTelemetry();
+        nlohmann::json response = {
+            {"server", {
+                {"host", m_config.host},
+                {"port", m_actualPort},
+                {"base_url", getBaseUrl()},
+                {"static_dir", m_config.staticDir},
+                {"uptime_seconds", telemetry.uptimeSeconds},
+                {"launch_latency_ms", telemetry.launchToReadyMs}
+            }},
+            {"toolchain", {
+                {"compiler", telemetry.compiler},
+                {"flags", telemetry.compilerFlags},
+                {"build_type", telemetry.buildType},
+                {"cpp_standard", "ISO C++17"},
+                {"architecture", telemetry.architecture}
+            }},
+            {"host_hardware", {
+                {"cpu_model", telemetry.cpuModel},
+                {"physical_cores", telemetry.physicalCores},
+                {"logical_cores", telemetry.logicalCores},
+                {"total_ram_mb", telemetry.totalRamBytes / (1024 * 1024)},
+                {"available_ram_mb", telemetry.availableRamBytes / (1024 * 1024)},
+                {"os_name", telemetry.osName}
+            }},
+            {"numerical_defaults", {
+                {"prng_seed", 42},
+                {"thermal_elements", 40},
+                {"thermal_conductivity", 10.0},
+                {"thermal_heat_gen", 10000.0},
+                {"perf_cases", 500},
+                {"neural_lr", 0.1},
+                {"neural_steps", 100},
+                {"finite_diff_eps", 1.0e-6},
+                {"neural_tolerance", 1.0e-5},
+                {"thermal_tolerance", 1.0e-8}
+            }},
+            {"viewport_defaults", {
+                {"cad_opacity", 0.85},
+                {"point_size", 10.0},
+                {"wireframe", false},
+                {"colormap", "Turbo (Scientific)"},
+                {"fov", 45.0}
+            }}
+        };
+        res.set_content(response.dump(2), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
+    });
+
     // Sample Benchmark Geometry Assets
     m_server->Get("/api/geometry/sample-stl", [](const httplib::Request&, httplib::Response& res) {
         std::string stlPath = core::SystemInfoProvider::resolvePath("data/stl/engineering_bracket.stl");

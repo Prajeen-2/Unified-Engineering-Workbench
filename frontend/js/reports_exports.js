@@ -144,3 +144,4 @@ class ReportsExportsController {
 document.addEventListener('DOMContentLoaded', () => {
     window.reportsExports = new ReportsExportsController();
 });
+

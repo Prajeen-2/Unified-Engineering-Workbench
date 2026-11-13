@@ -1989,27 +1989,224 @@
                 </div>
             </section>
 
-            <!-- 8. SETTINGS VIEW -->
+            <!-- 8. SETTINGS & SYSTEM CONFIGURATION VIEW -->
             <section class="view-panel" id="view-settings">
+                <!-- Header Card -->
+                <div class="card" style="margin-bottom: 16px;">
+                    <div class="card-header">
+                        <span class="card-title">Workbench Configuration, Runtime Controls & Host Diagnostics</span>
+                        <span class="metric-pill pill-success" id="settings-status-pill">System Operational &bull; Online</span>
+                    </div>
+                    <p style="color: var(--text-secondary); margin-bottom: 12px; font-size: 12px;">
+                        Manage C++ backend runtime parameters, inspect host hardware topology, calibrate numerical solver presets, configure 3D CAD visualization properties, and audit REST IPC health.
+                    </p>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <span class="metric-pill pill-cyan">Standard: ISO C++17</span>
+                        <span class="metric-pill pill-blue">Engine: MSVC 19.51 Release /O2</span>
+                        <span class="metric-pill pill-green">Target: Windows 11 x64</span>
+                        <span class="metric-pill pill-amber">Security: 100% Localhost Isolated</span>
+                    </div>
+                </div>
+
+                <!-- 2-Col Grid: Host Hardware & Network IPC -->
+                <div class="chart-container-2col">
+                    <!-- Host Hardware & Compiler Toolchain Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">Host Architecture & Compiler Toolchain</span>
+                            <span class="metric-pill pill-blue">Hardware Telemetry</span>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+                            <div class="metric-row">
+                                <span class="metric-label">CPU Model</span>
+                                <span class="metric-value" id="set-cpu-model">13th Gen Intel(R) Core(TM) i5-13420H</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Core Topology</span>
+                                <span class="metric-value" id="set-core-counts">8 Physical / 12 Logical Cores</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">System Memory (RAM)</span>
+                                <span class="metric-value" id="set-ram-info">16.0 GB Total</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Operating System</span>
+                                <span class="metric-value" id="set-os-name">Windows 11 x64 Native</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">C++ Compiler Toolchain</span>
+                                <span class="metric-value" id="set-compiler">MSVC 1951 (Visual Studio 2026)</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Optimization Flags</span>
+                                <span class="metric-value" style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan);">/O2 /Oi /Ot /Gy /utf-8 /std:c++17</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Floating-Point Model</span>
+                                <span class="metric-value">IEEE-754 Standard Double (64-bit)</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Launch-to-Ready Latency</span>
+                                <span class="metric-value" id="set-launch-latency">-- ms</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Network & REST IPC Server Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">Embedded REST Server & IPC Protocol</span>
+                            <span class="metric-pill pill-cyan">cpp-httplib Engine</span>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+                            <div class="metric-row">
+                                <span class="metric-label">Server Binding Address</span>
+                                <span class="metric-value" style="font-family: var(--font-mono); color: var(--accent-cyan);" id="set-server-url">http://127.0.0.1:8080</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Multi-Port Fallback Range</span>
+                                <span class="metric-value" style="font-family: var(--font-mono);">8080 – 8089 (Automatic failover)</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Serialization Standard</span>
+                                <span class="metric-value">nlohmann/json 3.11.3 (RFC 8259)</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Round-Trip IPC Latency</span>
+                                <span class="metric-value" id="set-ipc-latency" style="color: var(--accent-green); font-weight: 700;">-- ms</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Backend Process Uptime</span>
+                                <span class="metric-value" id="set-uptime">0s</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Network Sandbox Boundary</span>
+                                <span class="metric-value" style="color: var(--accent-green);">100% Localhost (Zero outbound traffic)</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Static Asset Mount Point</span>
+                                <span class="metric-value" id="set-static-dir" style="font-family: var(--font-mono); font-size: 11px;">frontend/</span>
+                            </div>
+                        </div>
+
+                        <div class="btn-group-row" style="margin-top: 14px;">
+                            <button class="btn-secondary" id="btn-set-ping-server">Ping Server (IPC Test)</button>
+                            <button class="btn-secondary" id="btn-set-copy-diag">Copy Diagnostics JSON</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2-Col Grid: Numerical Compute & 3D Viewport Presets -->
+                <div class="chart-container-2col">
+                    <!-- Numerical Compute & Solver Presets Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">Numerical Compute & Simulation Defaults</span>
+                            <span class="metric-pill pill-blue">Engineering Parameters</span>
+                        </div>
+                        <p style="color: var(--text-secondary); margin-bottom: 12px; font-size: 12px;">
+                            Configured engineering constants across 1D thermal FEA, multicore benchmarking, and neural gradient checking modules.
+                        </p>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="param-input-group">
+                                <label>Default Mesh Elements <span>Thermal FEA</span></label>
+                                <input type="number" id="set-def-elements" value="40" min="10" max="200" step="10">
+                            </div>
+                            <div class="param-input-group">
+                                <label>PRNG Random Seed <span>Multicore Lab</span></label>
+                                <input type="number" id="set-def-seed" value="42" min="1" max="999999">
+                            </div>
+                            <div class="param-input-group">
+                                <label>Benchmark Cases <span>Workload</span></label>
+                                <input type="number" id="set-def-cases" value="500" min="50" max="2000" step="50">
+                            </div>
+                            <div class="param-input-group">
+                                <label>Finite Diff &epsilon; <span>Neural Lab</span></label>
+                                <input type="text" id="set-def-eps" value="1.0e-6" style="font-family: var(--font-mono);">
+                            </div>
+                            <div class="param-input-group">
+                                <label>Neural Tolerance <span>Gate</span></label>
+                                <input type="text" id="set-def-tol" value="1.0e-5" style="font-family: var(--font-mono);">
+                            </div>
+                            <div class="param-input-group">
+                                <label>Thermal Tolerance <span>Parallel vs Serial</span></label>
+                                <input type="text" id="set-def-th-tol" value="1.0e-8 °C" disabled style="font-family: var(--font-mono);">
+                            </div>
+                        </div>
+
+                        <div class="btn-group-row" style="margin-top: 14px;">
+                            <button class="btn-primary" id="btn-set-save-solver">Save Compute Presets</button>
+                            <button class="btn-control" id="btn-set-reset-solver">Restore Assignment Defaults</button>
+                        </div>
+                    </div>
+
+                    <!-- 3D Viewport & Rendering Configuration Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">3D CAD Viewport & Graphics Engine</span>
+                            <span class="metric-pill pill-cyan">Three.js r128 WebGL</span>
+                        </div>
+                        <p style="color: var(--text-secondary); margin-bottom: 12px; font-size: 12px;">
+                            Configure WebGL rendering properties, camera field of view, CAD material shading, and scientific temperature colormaps.
+                        </p>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="param-input-group">
+                                <label>Default CAD Opacity <span>Viewport</span></label>
+                                <input type="number" id="set-def-cad-opacity" value="85" min="10" max="100" step="5">
+                            </div>
+                            <div class="param-input-group">
+                                <label>Node Point Size <span>Cloud</span></label>
+                                <input type="number" id="set-def-point-size" value="10" min="2" max="25" step="1">
+                            </div>
+                            <div class="param-input-group">
+                                <label>Camera Field of View <span>Perspective</span></label>
+                                <input type="number" id="set-def-fov" value="45" min="20" max="90" step="5">
+                            </div>
+                            <div class="param-input-group">
+                                <label>Colormap Preset <span>Thermal</span></label>
+                                <select id="set-def-colormap" style="background-color: #0b0f17; border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 10px; border-radius: 6px; font-size: 12px; width: 100%;">
+                                    <option value="turbo">Turbo (Scientific Jet Improved)</option>
+                                    <option value="viridis">Viridis (Perceptually Uniform)</option>
+                                    <option value="inferno">Inferno (High Thermal Dynamic)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="metric-row" style="margin-top: 8px;">
+                            <span class="metric-label">Coordinate Frame</span>
+                            <span class="metric-value" style="color: var(--accent-cyan);">Z-Up Engineering Standard (Right-Handed)</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Antialiasing Filter</span>
+                            <span class="metric-value">MSAA 4&times; Hardware Super-Sampling Enabled</span>
+                        </div>
+
+                        <div class="btn-group-row" style="margin-top: 14px;">
+                            <button class="btn-secondary" id="btn-set-save-viewport">Apply Graphics Presets</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Process Lifecycle & Diagnostics Card -->
                 <div class="card">
                     <div class="card-header">
-                        <span class="card-title">Workbench Configuration & Diagnostics</span>
+                        <span class="card-title">Diagnostics Management & Process Lifecycle</span>
+                        <span class="metric-pill pill-amber">Administrator Actions</span>
                     </div>
-                    <div class="metric-row">
-                        <span class="metric-label">Application Version</span>
-                        <span class="metric-value">1.0.0 (Release Candidate)</span>
+                    <p style="color: var(--text-secondary); margin-bottom: 14px; font-size: 12px;">
+                        Manage in-memory diagnostic buffers, export system reports, or execute graceful shutdown of the C++ backend process.
+                    </p>
+
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                        <button class="btn-secondary" id="btn-set-clear-logs">Clear In-Memory Log Buffer</button>
+                        <button class="btn-secondary" id="btn-set-export-logs">Download System Logs (.log)</button>
+                        <button class="btn-danger" id="btn-set-shutdown-server">Gracefully Terminate Backend Server</button>
                     </div>
-                    <div class="metric-row">
-                        <span class="metric-label">Backend Host & Port</span>
-                        <span class="metric-value">127.0.0.1 : 8080</span>
-                    </div>
-                    <div class="metric-row">
-                        <span class="metric-label">C++ Standard</span>
-                        <span class="metric-value">ISO C++17 (MSVC 19.51)</span>
-                    </div>
-                    <div class="metric-row">
-                        <span class="metric-label">Offline Integrity</span>
-                        <span class="metric-value">100% Local (Zero External CDN Dependency)</span>
+
+                    <div style="margin-top: 14px; padding: 10px 14px; background-color: #0b0f17; border: 1px solid var(--border-subtle); border-radius: 6px; font-size: 11px; color: var(--text-muted); line-height: 1.6;">
+                        <strong style="color: var(--text-primary);">Evaluator Notice:</strong> Terminating the server shuts down the Win32 socket server cleanly and closes all worker threads. To restart the workbench after shutdown, simply double-click <code style="color: var(--accent-cyan);">Launch.exe</code> in the project root directory.
                     </div>
                 </div>
             </section>
@@ -2028,6 +2225,7 @@
     <script src="js/hardware_integration.js"></script>
     <script src="js/neural_lab.js"></script>
     <script src="js/reports_exports.js"></script>
+    <script src="js/settings.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

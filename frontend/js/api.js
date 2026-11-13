@@ -165,6 +165,15 @@ class WorkbenchApi {
     async getReportsSummary() {
         return this.request('/api/reports/summary');
     }
+
+    // Settings & Diagnostics API Endpoints
+    async getSettings() {
+        return this.request('/api/system/settings');
+    }
+
+    async clearLogs() {
+        return this.request('/api/logs/clear', { method: 'POST' });
+    }
 }
 
 window.api = new WorkbenchApi();
