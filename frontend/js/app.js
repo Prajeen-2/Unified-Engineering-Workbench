@@ -163,3 +163,4 @@ document.addEventListener('DOMContentLoaded', () => {
     updateTelemetry();
     pollTimer = setInterval(updateTelemetry, 2000);
 });
+

@@ -138,30 +138,30 @@ std::string SystemInfoProvider::getExecutableDir() {
 #endif
 }
 
-std::string SystemInfoProvider::resolveFrontendPath() {
+std::string SystemInfoProvider::resolvePath(const std::string& relativePath) {
     namespace fs = std::filesystem;
     fs::path exeDir(getExecutableDir());
-
-    // Candidates in order of precedence:
-    // 1. Same directory: exeDir / "frontend"
-    // 2. Parent directory (e.g. build/Release -> build): exeDir.parent_path() / "frontend"
-    // 3. Grandparent (e.g. build/Release -> root): exeDir.parent_path().parent_path() / "frontend"
-    // 4. Current working directory: "./frontend"
+    fs::path rel(relativePath);
 
     std::vector<fs::path> candidates = {
-        exeDir / "frontend",
-        exeDir.parent_path() / "frontend",
-        exeDir.parent_path().parent_path() / "frontend",
-        fs::current_path() / "frontend"
+        exeDir / rel,
+        exeDir.parent_path() / rel,
+        exeDir.parent_path().parent_path() / rel,
+        fs::current_path() / rel
     };
 
     for (const auto& cand : candidates) {
-        if (fs::exists(cand) && fs::is_directory(cand)) {
+        if (fs::exists(cand)) {
             return cand.lexically_normal().string();
         }
     }
 
-    return (exeDir / "frontend").string();
+    return (exeDir / rel).string();
+}
+
+std::string SystemInfoProvider::resolveFrontendPath() {
+    return resolvePath("frontend");
 }
 
 } // namespace workbench::core
+

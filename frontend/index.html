@@ -168,7 +168,7 @@
                                     <td><strong>2. Geometry Viewer</strong></td>
                                     <td>ASCII STL & CSV Parser</td>
                                     <td>Three.js 3D & Point Cloud</td>
-                                    <td><span class="metric-pill pill-pending">MILESTONE B READY</span></td>
+                                    <td><span class="metric-pill pill-success">OPERATIONAL</span></td>
                                 </tr>
                                 <tr>
                                     <td><strong>3. Thermal Analysis</strong></td>
@@ -221,23 +221,151 @@
                 </div>
             </section>
 
-            <!-- 2. GEOMETRY VIEWER VIEW (Task B Shell) -->
+            <!-- 2. GEOMETRY VIEWER VIEW (Task B) -->
             <section class="view-panel" id="view-geometry">
-                <div class="card">
-                    <div class="card-header">
-                        <span class="card-title">3D CAD Geometry & Temperature Cloud Viewer</span>
-                        <span class="metric-pill pill-pending">Milestone B Target</span>
+                <div class="viewer-grid">
+                    <!-- 3D WebGL Viewport Container -->
+                    <div class="viewport-wrapper">
+                        <!-- Floating Viewport Controls -->
+                        <div class="viewport-toolbar">
+                            <button class="btn-tool" id="btn-fit-view" title="Auto-center and frame geometry">Fit to View</button>
+                            <button class="btn-tool" id="btn-reset-view" title="Reset camera to isometric view">Reset View</button>
+                            <button class="btn-tool active" id="btn-toggle-wireframe" title="Toggle mesh wireframe overlay">Wireframe</button>
+                            <div style="display:flex; align-items:center; gap:6px; margin-left:6px;">
+                                <label style="font-size:11px; color:var(--text-secondary);">Colormap:</label>
+                                <select class="tool-select" id="select-colormap">
+                                    <option value="turbo" selected>Turbo (Scientific)</option>
+                                    <option value="jet">Thermal Jet</option>
+                                    <option value="viridis">Viridis</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 3D Canvas Mount Point -->
+                        <div id="viewport-3d"></div>
+
+                        <!-- Temperature Legend Overlay -->
+                        <div class="legend-panel">
+                            <span class="legend-title">Temperature (°C)</span>
+                            <div class="legend-bar-container">
+                                <div class="legend-bar" id="legend-gradient-bar"></div>
+                                <div class="legend-ticks">
+                                    <span id="legend-tmax">150.0 °C</span>
+                                    <span id="legend-tmid">87.5 °C</span>
+                                    <span id="legend-tmin">25.0 °C</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Interactive Node Tooltip -->
+                        <div class="node-tooltip" id="node-tooltip"></div>
                     </div>
-                    <p style="color: var(--text-secondary); margin-bottom: 12px;">
-                        Interactive 3D visualization workspace powered by Three.js and custom C++ STL/CSV parsing pipelines.
-                    </p>
-                    <div class="metric-row">
-                        <span class="metric-label">Pipeline Capabilities</span>
-                        <span class="metric-value">ASCII STL parsing, facet normal validation, ANSYS CSV temperature mapping</span>
-                    </div>
-                    <div class="metric-row">
-                        <span class="metric-label">Interaction Controls</span>
-                        <span class="metric-value">Rotate (Left Click), Pan (Right Click), Zoom (Scroll Wheel), Fit-to-View</span>
+
+                    <!-- Geometry & Thermal Inspector Sidebar -->
+                    <div class="viewer-sidebar">
+                        <!-- Import Controls -->
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">Dataset Loaders</span>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <button class="btn-secondary" id="btn-load-sample-stl">Load Benchmark STL</button>
+                                <button class="btn-secondary" id="btn-load-sample-csv">Load Benchmark ANSYS CSV</button>
+                                <div style="display: flex; gap: 8px; margin-top: 4px;">
+                                    <button class="btn-secondary" style="flex:1;" id="btn-upload-stl">Import STL</button>
+                                    <button class="btn-secondary" style="flex:1;" id="btn-upload-csv">Import CSV</button>
+                                </div>
+                                <input type="file" id="file-input-stl" class="file-input-hidden" accept=".stl">
+                                <input type="file" id="file-input-csv" class="file-input-hidden" accept=".csv">
+                            </div>
+                        </div>
+
+                        <!-- Viewport Rendering Adjustments -->
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">Viewport Display</span>
+                            </div>
+                            <div class="control-group">
+                                <div class="control-label">
+                                    <span>CAD Mesh Opacity</span>
+                                    <span id="val-mesh-opacity">85%</span>
+                                </div>
+                                <input type="range" class="range-slider" id="slider-mesh-opacity" min="0" max="1" step="0.05" value="0.85">
+                            </div>
+                            <div class="control-group">
+                                <div class="control-label">
+                                    <span>Point Node Size</span>
+                                    <span id="val-point-size">10 px</span>
+                                </div>
+                                <input type="range" class="range-slider" id="slider-point-size" min="2" max="25" step="1" value="10">
+                            </div>
+                        </div>
+
+                        <!-- CAD Geometry Statistics -->
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">CAD Geometry Statistics</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Solid Name</span>
+                                <span class="metric-value" id="hud-solid-name">--</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Facets (Triangles)</span>
+                                <span class="metric-value" id="hud-tri-count">--</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Vertex Coordinates</span>
+                                <span class="metric-value" id="hud-vert-count">--</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Surface Area</span>
+                                <span class="metric-value" id="hud-surface-area">--</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Bounding Dimensions</span>
+                                <span class="metric-value" id="hud-dimensions">--</span>
+                            </div>
+                        </div>
+
+                        <!-- Thermal Field Metrics -->
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">Thermal Point Cloud</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Validated Nodes</span>
+                                <span class="metric-value" id="hud-node-count">--</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Temperature Extrema</span>
+                                <span class="metric-value" id="hud-temp-range">--</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Mean Field Temp</span>
+                                <span class="metric-value" id="hud-temp-mean">--</span>
+                            </div>
+                        </div>
+
+                        <!-- Interactive Node Inspector -->
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">Selected Node Inspector</span>
+                                <span class="metric-pill pill-info">Hover / Click</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Node Identifier</span>
+                                <span class="metric-value" id="inspect-node-id" style="color:var(--accent-cyan);">--</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Temperature</span>
+                                <span class="metric-value" id="inspect-node-temp" style="color:var(--accent-amber);">--</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Spatial Position (X,Y,Z)</span>
+                                <span class="metric-value" id="inspect-node-pos">--</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -368,6 +496,8 @@
 
     <!-- Application Script -->
     <script src="js/api.js"></script>
+    <script src="js/geometry_viewer.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>
+

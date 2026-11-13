@@ -11,3 +11,4 @@ if exist "workbench_server.exe" (
     echo [ERROR] workbench_server.exe not found. Please run build.bat first!
     exit /b 1
 )
+

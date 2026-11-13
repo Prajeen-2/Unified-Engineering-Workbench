@@ -8,6 +8,8 @@
 #include "server/HttpServer.hpp"
 #include "core/Logger.hpp"
 #include "core/SystemInfo.hpp"
+#include "geometry/StlParser.hpp"
+#include "geometry/CsvParser.hpp"
 #include "httplib/httplib.h"
 #include "nlohmann/json.hpp"
 #include <filesystem>
@@ -81,6 +83,75 @@ void HttpServer::setupRoutes() {
             {"logs", logArray}
         };
         res.set_content(response.dump(2), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
+    });
+
+    // Sample Benchmark Geometry Assets
+    m_server->Get("/api/geometry/sample-stl", [](const httplib::Request&, httplib::Response& res) {
+        std::string stlPath = core::SystemInfoProvider::resolvePath("data/stl/engineering_bracket.stl");
+        auto parseRes = geometry::StlParser::parseAsciiFile(stlPath);
+        res.set_content(parseRes.toJson().dump(2), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
+    });
+
+    m_server->Get("/api/geometry/sample-csv", [](const httplib::Request&, httplib::Response& res) {
+        std::string csvPath = core::SystemInfoProvider::resolvePath("data/csv/synthetic_thermal_field.csv");
+        auto parseRes = geometry::CsvParser::parseFile(csvPath);
+        res.set_content(parseRes.toJson().dump(2), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
+    });
+
+    // Custom STL Parse Endpoint
+    m_server->Post("/api/geometry/parse-stl", [](const httplib::Request& req, httplib::Response& res) {
+        std::string contentToParse;
+        if (req.body.rfind("solid", 0) == 0) {
+            contentToParse = req.body;
+        } else {
+            try {
+                auto j = nlohmann::json::parse(req.body);
+                if (j.contains("content")) {
+                    contentToParse = j["content"].get<std::string>();
+                } else if (j.contains("path")) {
+                    std::string filePath = core::SystemInfoProvider::resolvePath(j["path"].get<std::string>());
+                    auto parseRes = geometry::StlParser::parseAsciiFile(filePath);
+                    res.set_content(parseRes.toJson().dump(2), "application/json");
+                    res.set_header("Access-Control-Allow-Origin", "*");
+                    return;
+                }
+            } catch (...) {
+                contentToParse = req.body;
+            }
+        }
+
+        auto parseRes = geometry::StlParser::parseAsciiString(contentToParse);
+        res.set_content(parseRes.toJson().dump(2), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
+    });
+
+    // Custom ANSYS CSV Parse Endpoint
+    m_server->Post("/api/geometry/parse-csv", [](const httplib::Request& req, httplib::Response& res) {
+        std::string contentToParse;
+        if (req.body.find("node_id") != std::string::npos || req.body.find("NODE_ID") != std::string::npos) {
+            contentToParse = req.body;
+        } else {
+            try {
+                auto j = nlohmann::json::parse(req.body);
+                if (j.contains("content")) {
+                    contentToParse = j["content"].get<std::string>();
+                } else if (j.contains("path")) {
+                    std::string filePath = core::SystemInfoProvider::resolvePath(j["path"].get<std::string>());
+                    auto parseRes = geometry::CsvParser::parseFile(filePath);
+                    res.set_content(parseRes.toJson().dump(2), "application/json");
+                    res.set_header("Access-Control-Allow-Origin", "*");
+                    return;
+                }
+            } catch (...) {
+                contentToParse = req.body;
+            }
+        }
+
+        auto parseRes = geometry::CsvParser::parseString(contentToParse);
+        res.set_content(parseRes.toJson().dump(2), "application/json");
         res.set_header("Access-Control-Allow-Origin", "*");
     });
 
@@ -175,3 +246,4 @@ void HttpServer::stop() {
 }
 
 } // namespace workbench::server
+

@@ -1,0 +1,142 @@
+solid EngineeringBracket
+  facet normal 0.0 0.0 -1.0
+    outer loop
+      vertex 0.000 0.000 0.000
+      vertex 0.100 0.050 0.000
+      vertex 0.100 0.000 0.000
+    endloop
+  endfacet
+  facet normal 0.0 0.0 -1.0
+    outer loop
+      vertex 0.000 0.000 0.000
+      vertex 0.000 0.050 0.000
+      vertex 0.100 0.050 0.000
+    endloop
+  endfacet
+  facet normal 0.0 0.0 1.0
+    outer loop
+      vertex 0.015 0.000 0.015
+      vertex 0.100 0.000 0.015
+      vertex 0.100 0.050 0.015
+    endloop
+  endfacet
+  facet normal 0.0 0.0 1.0
+    outer loop
+      vertex 0.015 0.000 0.015
+      vertex 0.100 0.050 0.015
+      vertex 0.015 0.050 0.015
+    endloop
+  endfacet
+  facet normal 1.0 0.0 0.0
+    outer loop
+      vertex 0.100 0.000 0.000
+      vertex 0.100 0.050 0.015
+      vertex 0.100 0.000 0.015
+    endloop
+  endfacet
+  facet normal 1.0 0.0 0.0
+    outer loop
+      vertex 0.100 0.000 0.000
+      vertex 0.100 0.050 0.000
+      vertex 0.100 0.050 0.015
+    endloop
+  endfacet
+  facet normal 0.0 -1.0 0.0
+    outer loop
+      vertex 0.000 0.000 0.000
+      vertex 0.100 0.000 0.015
+      vertex 0.000 0.000 0.015
+    endloop
+  endfacet
+  facet normal 0.0 -1.0 0.0
+    outer loop
+      vertex 0.000 0.000 0.000
+      vertex 0.100 0.000 0.000
+      vertex 0.100 0.000 0.015
+    endloop
+  endfacet
+  facet normal 0.0 1.0 0.0
+    outer loop
+      vertex 0.000 0.050 0.000
+      vertex 0.000 0.050 0.015
+      vertex 0.100 0.050 0.015
+    endloop
+  endfacet
+  facet normal 0.0 1.0 0.0
+    outer loop
+      vertex 0.000 0.050 0.000
+      vertex 0.100 0.050 0.015
+      vertex 0.100 0.050 0.000
+    endloop
+  endfacet
+  facet normal -1.0 0.0 0.0
+    outer loop
+      vertex 0.000 0.000 0.000
+      vertex 0.000 0.000 0.080
+      vertex 0.000 0.050 0.080
+    endloop
+  endfacet
+  facet normal -1.0 0.0 0.0
+    outer loop
+      vertex 0.000 0.000 0.000
+      vertex 0.000 0.050 0.080
+      vertex 0.000 0.050 0.000
+    endloop
+  endfacet
+  facet normal 0.0 0.0 1.0
+    outer loop
+      vertex 0.000 0.000 0.080
+      vertex 0.015 0.050 0.080
+      vertex 0.000 0.050 0.080
+    endloop
+  endfacet
+  facet normal 0.0 0.0 1.0
+    outer loop
+      vertex 0.000 0.000 0.080
+      vertex 0.015 0.000 0.080
+      vertex 0.015 0.050 0.080
+    endloop
+  endfacet
+  facet normal 1.0 0.0 0.0
+    outer loop
+      vertex 0.015 0.000 0.015
+      vertex 0.015 0.050 0.080
+      vertex 0.015 0.000 0.080
+    endloop
+  endfacet
+  facet normal 1.0 0.0 0.0
+    outer loop
+      vertex 0.015 0.000 0.015
+      vertex 0.015 0.050 0.015
+      vertex 0.015 0.050 0.080
+    endloop
+  endfacet
+  facet normal 0.0 -1.0 0.0
+    outer loop
+      vertex 0.000 0.000 0.015
+      vertex 0.015 0.000 0.080
+      vertex 0.000 0.000 0.080
+    endloop
+  endfacet
+  facet normal 0.0 -1.0 0.0
+    outer loop
+      vertex 0.000 0.000 0.015
+      vertex 0.015 0.000 0.015
+      vertex 0.015 0.000 0.080
+    endloop
+  endfacet
+  facet normal 0.0 1.0 0.0
+    outer loop
+      vertex 0.000 0.050 0.015
+      vertex 0.000 0.050 0.080
+      vertex 0.015 0.050 0.080
+    endloop
+  endfacet
+  facet normal 0.0 1.0 0.0
+    outer loop
+      vertex 0.000 0.050 0.015
+      vertex 0.015 0.050 0.080
+      vertex 0.015 0.050 0.015
+    endloop
+  endfacet
+endsolid EngineeringBracket

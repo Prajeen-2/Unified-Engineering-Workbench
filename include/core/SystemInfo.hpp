@@ -26,6 +26,7 @@ public:
     static SystemTelemetry getTelemetry();
     static std::string getExecutableDir();
     static std::string resolveFrontendPath();
+    static std::string resolvePath(const std::string& relativePath);
 
 private:
     static std::string queryCpuModel();
@@ -33,3 +34,4 @@ private:
 };
 
 } // namespace workbench::core
+

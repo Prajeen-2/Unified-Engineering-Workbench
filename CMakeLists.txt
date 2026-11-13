@@ -30,6 +30,8 @@ set(CORE_SOURCES
     src/core/Logger.cpp
     src/core/SystemInfo.cpp
     src/server/HttpServer.cpp
+    src/geometry/StlParser.cpp
+    src/geometry/CsvParser.cpp
 )
 
 # Main server executable
@@ -74,3 +76,11 @@ endif()
 
 # Testing framework setup
 enable_testing()
+
+add_executable(test_geometry
+    tests/test_geometry.cpp
+    src/geometry/StlParser.cpp
+    src/geometry/CsvParser.cpp
+)
+add_test(NAME GeometryAndCsvTests COMMAND test_geometry)
+

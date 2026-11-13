@@ -63,3 +63,4 @@ void Logger::clear() {
 }
 
 } // namespace workbench::core
+

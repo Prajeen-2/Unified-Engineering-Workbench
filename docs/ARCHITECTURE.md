@@ -82,3 +82,4 @@ The Unified Engineering Workbench is engineered around three core tenets:
    $$\frac{\partial J}{\partial \theta} \approx \frac{J(\theta + \epsilon) - J(\theta - \epsilon)}{2\epsilon}, \quad \epsilon = 10^{-6}$$
    with an acceptance threshold of $| \text{diff} | \le 10^{-5}$.
 4. **Deterministic Parallelism**: Worker pool benchmarks guarantee identical outputs between single-threaded and multithreaded runs with maximum temperature deviation $\le 10^{-8} \text{ }^\circ\text{C}$.
+

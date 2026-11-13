@@ -64,3 +64,4 @@ class WorkbenchApi {
 }
 
 window.api = new WorkbenchApi();
+

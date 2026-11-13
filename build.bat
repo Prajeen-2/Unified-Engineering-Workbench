@@ -51,3 +51,4 @@ echo     - workbench_server.exe (Backend server)
 echo     - build\bin\ (Distribution output)
 echo ===================================================================
 exit /b 0
+
