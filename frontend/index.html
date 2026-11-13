@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Engineering Workbench | PASS SCIENCE WORKS R&D</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Bundled offline third-party dependencies -->
+    <script src="vendor/three.min.js"></script>
+    <script src="vendor/OrbitControls.js"></script>
+    <script src="vendor/plotly.min.js"></script>
+</head>
+<body>
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="brand-badge">UEW</div>
+            <div>
+                <div class="brand-title">Engineering Workbench</div>
+                <div class="brand-subtitle">v1.0.0 &bull; PASS R&D 2026</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-menu">
+            <div class="menu-category">Core Workspaces</div>
+            <a class="nav-item active" data-module="dashboard" href="#dashboard">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                <span class="nav-label">Dashboard</span>
+            </a>
+            <a class="nav-item" data-module="geometry" href="#geometry">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3.99L19.53 19H4.47L12 5.99zM11 10h2v4h-2zm0 6h2v2h-2z"/></svg>
+                <span class="nav-label">Geometry Viewer</span>
+            </a>
+            <a class="nav-item" data-module="thermal" href="#thermal">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M15 13V5c0-1.66-1.34-3-3-3S9 3.34 9 5v8c-1.21.91-2 2.37-2 4 0 2.76 2.24 5 5 5s5-2.24 5-5c0-1.63-.79-3.09-2-4zm-4-8c0-.55.45-1 1-1s1 .45 1 1h-1v1h1v2h-1v1h1v2h-2V5z"/></svg>
+                <span class="nav-label">Thermal Analysis</span>
+            </a>
+            <a class="nav-item" data-module="performance" href="#performance">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42C16.07 4.74 14.12 4 12 4c-4.97 0-9 4.03-9 9s4.02 9 9 9 9-4.03 9-9c0-2.12-.74-4.07-1.97-5.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
+                <span class="nav-label">Performance Lab</span>
+            </a>
+
+            <div class="menu-category">Systems & Modeling</div>
+            <a class="nav-item" data-module="hardware" href="#hardware">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M4 6h16v12H4z M2 4v16h20V4H2zm3 3h3v3H5V7zm5 0h3v3h-3V7zm5 0h4v3h-4V7zm-10 5h14v5H5v-5z"/></svg>
+                <span class="nav-label">Hardware Integration</span>
+            </a>
+            <a class="nav-item" data-module="neural" href="#neural">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                <span class="nav-label">Neural Network Lab</span>
+            </a>
+            <a class="nav-item" data-module="reports" href="#reports">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                <span class="nav-label">Reports & Exports</span>
+            </a>
+            <a class="nav-item" data-module="settings" href="#settings">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                <span class="nav-label">Settings</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="telemetry-chip">
+                <span>SYSTEM TARGET:</span>
+                <span id="sidebar-host-info">x64 | Windows 11</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="main-container">
+        <!-- Top Control Bar -->
+        <header class="top-bar">
+            <div class="top-left">
+                <span class="module-title" id="current-module-title">Dashboard</span>
+            </div>
+
+            <div class="top-right">
+                <div class="status-indicator">
+                    <span class="status-dot" id="status-dot"></span>
+                    <span id="status-text">CONNECTING...</span>
+                    <span style="color: var(--text-muted);">&bull;</span>
+                    <span id="status-ping">-- ms</span>
+                </div>
+                <button class="btn-danger" id="btn-shutdown" title="Gracefully stop backend C++ server">Shutdown Server</button>
+            </div>
+        </header>
+
+        <!-- View Panels -->
+        <div class="workspace-content">
+
+            <!-- 1. DASHBOARD VIEW -->
+            <section class="view-panel active" id="view-dashboard">
+                <div class="card-grid">
+                    <!-- Host Telemetry -->
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">Host Architecture</span>
+                            <span class="metric-pill pill-info" id="dash-build-type">Release /O2</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">CPU Model</span>
+                            <span class="metric-value" id="dash-cpu-model">Querying...</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Core Topology</span>
+                            <span class="metric-value" id="dash-core-counts">-- Physical / -- Logical</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Physical Memory (RAM)</span>
+                            <span class="metric-value" id="dash-ram-metrics">-- GB / -- GB</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Compiler Toolchain</span>
+                            <span class="metric-value" id="dash-compiler">MSVC C++17</span>
+                        </div>
+                    </div>
+
+                    <!-- Server Telemetry -->
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">C++ Backend Runtime</span>
+                            <span class="metric-pill pill-success" id="dash-server-status">Connecting</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Communication Protocol</span>
+                            <span class="metric-value">REST over HTTP (cpp-httplib)</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Serialization Standard</span>
+                            <span class="metric-value">nlohmann/json 3.11</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Backend Uptime</span>
+                            <span class="metric-value" id="dash-uptime">0s</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Target Architecture</span>
+                            <span class="metric-value">Windows 11 x64 Native</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Module Readiness Matrix -->
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">System Architecture & Module Readiness Matrix</span>
+                    </div>
+                    <div class="table-container">
+                        <table class="spec-table">
+                            <thead>
+                                <tr>
+                                    <th>Module</th>
+                                    <th>Backend Engine (C++)</th>
+                                    <th>Frontend Visualizer</th>
+                                    <th>Specification Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>1. Dashboard</strong></td>
+                                    <td>SystemInfo, Logger, HttpServer</td>
+                                    <td>HTML5 / CSS3 / ES6</td>
+                                    <td><span class="metric-pill pill-success">OPERATIONAL</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>2. Geometry Viewer</strong></td>
+                                    <td>ASCII STL & CSV Parser</td>
+                                    <td>Three.js 3D & Point Cloud</td>
+                                    <td><span class="metric-pill pill-pending">MILESTONE B READY</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>3. Thermal Analysis</strong></td>
+                                    <td>1D Thermal FEM Solver (Dirichlet)</td>
+                                    <td>Plotly.js Scientific Charts</td>
+                                    <td><span class="metric-pill pill-pending">MILESTONE C READY</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>4. Performance Lab</strong></td>
+                                    <td>Bounded Worker Thread Pool</td>
+                                    <td>Speedup & Efficiency Curves</td>
+                                    <td><span class="metric-pill pill-pending">MILESTONE D READY</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>5. Hardware Integration</strong></td>
+                                    <td>MCU / FPGA / JTAG Mock Adapters</td>
+                                    <td>Telemetry Bus & Protocol State</td>
+                                    <td><span class="metric-pill pill-pending">MILESTONE E READY</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>6. Neural Network Lab</strong></td>
+                                    <td>Manual Backprop & Central Diff</td>
+                                    <td>Loss Curve & Gradient Check</td>
+                                    <td><span class="metric-pill pill-pending">MILESTONE F READY</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>7. Reports & Exports</strong></td>
+                                    <td>CSV / Summary Exporter</td>
+                                    <td>Document & Data Viewer</td>
+                                    <td><span class="metric-pill pill-pending">MILESTONE G READY</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Live C++ Backend Activity Log Terminal -->
+                <div class="card card-grid-full">
+                    <div class="card-header">
+                        <span class="card-title">C++ Backend Activity Log (Live Stream)</span>
+                        <span class="metric-pill pill-info">Thread-Safe In-Memory Buffer</span>
+                    </div>
+                    <div class="log-terminal" id="log-terminal-output">
+                        <div class="log-line">
+                            <span class="log-ts">[00:00:00.000]</span>
+                            <span class="log-level log-level-INFO">[INFO]</span>
+                            <span class="log-msg">Connecting to backend activity stream...</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. GEOMETRY VIEWER VIEW (Task B Shell) -->
+            <section class="view-panel" id="view-geometry">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">3D CAD Geometry & Temperature Cloud Viewer</span>
+                        <span class="metric-pill pill-pending">Milestone B Target</span>
+                    </div>
+                    <p style="color: var(--text-secondary); margin-bottom: 12px;">
+                        Interactive 3D visualization workspace powered by Three.js and custom C++ STL/CSV parsing pipelines.
+                    </p>
+                    <div class="metric-row">
+                        <span class="metric-label">Pipeline Capabilities</span>
+                        <span class="metric-value">ASCII STL parsing, facet normal validation, ANSYS CSV temperature mapping</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Interaction Controls</span>
+                        <span class="metric-value">Rotate (Left Click), Pan (Right Click), Zoom (Scroll Wheel), Fit-to-View</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. THERMAL ANALYSIS VIEW (Task C Shell) -->
+            <section class="view-panel" id="view-thermal">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">1D Steady-State Thermal Finite Element Solver</span>
+                        <span class="metric-pill pill-pending">Milestone C Target</span>
+                    </div>
+                    <p style="color: var(--text-secondary); margin-bottom: 12px;">
+                        Numerical FEA simulation solving <code>-d/dx(kA dT/dx) = qA</code> using linear two-node elements.
+                    </p>
+                    <div class="metric-row">
+                        <span class="metric-label">Boundary Conditions</span>
+                        <span class="metric-value">T(0) = 100°C, T(L) = 20°C (Dirichlet Elimination Method)</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Convergence Verification</span>
+                        <span class="metric-value">Mesh discretizations N = 10, 20, 40, 80 with exact analytical benchmark</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. PERFORMANCE LAB VIEW (Task D Shell) -->
+            <section class="view-panel" id="view-performance">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Multicore Performance & Scalability Benchmarking</span>
+                        <span class="metric-pill pill-pending">Milestone D Target</span>
+                    </div>
+                    <p style="color: var(--text-secondary); margin-bottom: 12px;">
+                        Bounded C++ worker pool benchmark executing deterministic thermal simulation batches.
+                    </p>
+                    <div class="metric-row">
+                        <span class="metric-label">Worker Scalability</span>
+                        <span class="metric-value">1, 2, 3, 4 workers capped at logical concurrency with Speedup & Efficiency metrics</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Verification Tolerance</span>
+                        <span class="metric-value">Strict verification: Max |T_parallel - T_serial| &le; 1e-8 °C</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. HARDWARE INTEGRATION VIEW (Task E Shell) -->
+            <section class="view-panel" id="view-hardware">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Embedded System Integration & Telemetry Bus</span>
+                        <span class="metric-pill pill-pending">Milestone E Target</span>
+                    </div>
+                    <p style="color: var(--text-secondary); margin-bottom: 12px;">
+                        Tri-device hardware architecture connecting Microcontroller, FPGA, and JTAG Debug Adapter.
+                    </p>
+                    <div class="metric-row">
+                        <span class="metric-label">Protocols & Adapters</span>
+                        <span class="metric-value">C++ Mock device adapters with auto-discovery, telemetry streaming & timeout recovery</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 6. NEURAL NETWORK LAB VIEW (Task F Shell) -->
+            <section class="view-panel" id="view-neural">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Analytical Backpropagation & Gradient Verification</span>
+                        <span class="metric-pill pill-pending">Milestone F Target</span>
+                    </div>
+                    <p style="color: var(--text-secondary); margin-bottom: 12px;">
+                        Exact manual chain-rule derivative implementation without external autograd libraries.
+                    </p>
+                    <div class="metric-row">
+                        <span class="metric-label">Regression Network</span>
+                        <span class="metric-value">h = tanh(w*x + b), y_hat = v*h + c, Loss = 0.5*(y_hat - y)^2</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Numerical Gradient Check</span>
+                        <span class="metric-value">Central finite-difference check: Error &le; 1e-5 (epsilon = 1e-6)</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 7. REPORTS & EXPORTS VIEW -->
+            <section class="view-panel" id="view-reports">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Data Exports, Logs & Technical Report Artifacts</span>
+                        <span class="metric-pill pill-pending">Milestone G Target</span>
+                    </div>
+                    <p style="color: var(--text-secondary); margin-bottom: 12px;">
+                        Export simulation datasets, benchmark tables, and mathematical derivations in CSV and structured formats.
+                    </p>
+                </div>
+            </section>
+
+            <!-- 8. SETTINGS VIEW -->
+            <section class="view-panel" id="view-settings">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Workbench Configuration & Diagnostics</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Application Version</span>
+                        <span class="metric-value">1.0.0 (Release Candidate)</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Backend Host & Port</span>
+                        <span class="metric-value">127.0.0.1 : 8080</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">C++ Standard</span>
+                        <span class="metric-value">ISO C++17 (MSVC 19.51)</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Offline Integrity</span>
+                        <span class="metric-value">100% Local (Zero External CDN Dependency)</span>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Application Script -->
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

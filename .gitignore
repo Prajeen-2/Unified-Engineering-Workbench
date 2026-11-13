@@ -1,0 +1,23 @@
+# Build artifacts
+build/
+bin/
+out/
+*.obj
+*.exe
+*.pdb
+*.ilk
+*.idb
+
+# Visual Studio / IDE
+.vs/
+*.vcxproj*
+!*.vcxproj.user
+*.sln
+*.suo
+*.user
+.vscode/
+
+# OS generated
+Thumbs.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
