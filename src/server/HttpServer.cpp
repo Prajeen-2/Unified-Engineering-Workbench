@@ -10,6 +10,7 @@
 #include "core/SystemInfo.hpp"
 #include "geometry/StlParser.hpp"
 #include "geometry/CsvParser.hpp"
+#include "thermal/ThermalSolver1D.hpp"
 #include "httplib/httplib.h"
 #include "nlohmann/json.hpp"
 #include <filesystem>
@@ -152,6 +153,101 @@ void HttpServer::setupRoutes() {
 
         auto parseRes = geometry::CsvParser::parseString(contentToParse);
         res.set_content(parseRes.toJson().dump(2), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
+    });
+
+    // ===================================================================
+    // TASK C: 1D Thermal Finite Element Analysis Endpoints
+    // ===================================================================
+
+    m_server->Post("/api/thermal/solve", [](const httplib::Request& req, httplib::Response& res) {
+        thermal::ThermalParameters params;
+        // Default benchmark parameters: L=1.0, A=1e-4, k=10, q=10000, T0=100, TL=20, N=10
+        if (!req.body.empty()) {
+            try {
+                auto j = nlohmann::json::parse(req.body);
+                if (j.contains("length")) params.length = j["length"].get<double>();
+                if (j.contains("area")) params.area = j["area"].get<double>();
+                if (j.contains("conductivity")) params.conductivity = j["conductivity"].get<double>();
+                if (j.contains("heat_generation")) params.heatGeneration = j["heat_generation"].get<double>();
+                if (j.contains("t_left")) params.tLeft = j["t_left"].get<double>();
+                if (j.contains("t_right")) params.tRight = j["t_right"].get<double>();
+                if (j.contains("num_elements")) params.numElements = j["num_elements"].get<uint32_t>();
+            } catch (const std::exception& e) {
+                nlohmann::json errRes = {
+                    {"success", false},
+                    {"error_message", std::string("Malformed JSON payload: ") + e.what()}
+                };
+                res.set_content(errRes.dump(2), "application/json");
+                res.set_header("Access-Control-Allow-Origin", "*");
+                return;
+            }
+        }
+
+        auto solveRes = thermal::ThermalSolver1D::solve(params);
+        res.set_content(solveRes.toJson().dump(2), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
+    });
+
+    m_server->Post("/api/thermal/convergence", [](const httplib::Request& req, httplib::Response& res) {
+        thermal::ThermalParameters params;
+        std::vector<uint32_t> meshSizes = {10, 20, 40, 80};
+
+        if (!req.body.empty()) {
+            try {
+                auto j = nlohmann::json::parse(req.body);
+                if (j.contains("length")) params.length = j["length"].get<double>();
+                if (j.contains("area")) params.area = j["area"].get<double>();
+                if (j.contains("conductivity")) params.conductivity = j["conductivity"].get<double>();
+                if (j.contains("heat_generation")) params.heatGeneration = j["heat_generation"].get<double>();
+                if (j.contains("t_left")) params.tLeft = j["t_left"].get<double>();
+                if (j.contains("t_right")) params.tRight = j["t_right"].get<double>();
+                if (j.contains("mesh_sizes") && j["mesh_sizes"].is_array()) {
+                    meshSizes.clear();
+                    for (const auto& item : j["mesh_sizes"]) {
+                        meshSizes.push_back(item.get<uint32_t>());
+                    }
+                }
+            } catch (const std::exception& e) {
+                nlohmann::json errRes = {
+                    {"success", false},
+                    {"error_message", std::string("Malformed JSON payload: ") + e.what()}
+                };
+                res.set_content(errRes.dump(2), "application/json");
+                res.set_header("Access-Control-Allow-Origin", "*");
+                return;
+            }
+        }
+
+        auto studyRes = thermal::ThermalSolver1D::runConvergenceStudy(params, meshSizes);
+        res.set_content(studyRes.toJson().dump(2), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
+    });
+
+    m_server->Get("/api/thermal/export-csv", [](const httplib::Request& req, httplib::Response& res) {
+        std::string type = "temperature";
+        if (req.has_param("type")) {
+            type = req.get_param_value("type");
+        }
+
+        thermal::ThermalParameters params;
+        if (req.has_param("length")) params.length = std::stod(req.get_param_value("length"));
+        if (req.has_param("area")) params.area = std::stod(req.get_param_value("area"));
+        if (req.has_param("conductivity")) params.conductivity = std::stod(req.get_param_value("conductivity"));
+        if (req.has_param("heat_generation")) params.heatGeneration = std::stod(req.get_param_value("heat_generation"));
+        if (req.has_param("t_left")) params.tLeft = std::stod(req.get_param_value("t_left"));
+        if (req.has_param("t_right")) params.tRight = std::stod(req.get_param_value("t_right"));
+        if (req.has_param("elements")) params.numElements = std::stoul(req.get_param_value("elements"));
+
+        if (type == "convergence") {
+            auto studyRes = thermal::ThermalSolver1D::runConvergenceStudy(params, {10, 20, 40, 80});
+            res.set_content(studyRes.toCsv(), "text/csv");
+            res.set_header("Content-Disposition", "attachment; filename=\"thermal_mesh_convergence.csv\"");
+        } else {
+            auto solveRes = thermal::ThermalSolver1D::solve(params);
+            res.set_content(solveRes.toCsv(), "text/csv");
+            res.set_header("Content-Disposition", "attachment; filename=\"thermal_temperature_results.csv\"");
+        }
         res.set_header("Access-Control-Allow-Origin", "*");
     });
 

@@ -174,7 +174,7 @@
                                     <td><strong>3. Thermal Analysis</strong></td>
                                     <td>1D Thermal FEM Solver (Dirichlet)</td>
                                     <td>Plotly.js Scientific Charts</td>
-                                    <td><span class="metric-pill pill-pending">MILESTONE C READY</span></td>
+                                    <td><span class="metric-pill pill-success">OPERATIONAL</span></td>
                                 </tr>
                                 <tr>
                                     <td><strong>4. Performance Lab</strong></td>
@@ -370,23 +370,215 @@
                 </div>
             </section>
 
-            <!-- 3. THERMAL ANALYSIS VIEW (Task C Shell) -->
+            <!-- 3. THERMAL ANALYSIS VIEW (Task C) -->
             <section class="view-panel" id="view-thermal">
-                <div class="card">
-                    <div class="card-header">
-                        <span class="card-title">1D Steady-State Thermal Finite Element Solver</span>
-                        <span class="metric-pill pill-pending">Milestone C Target</span>
+                <!-- Top Summary Alert / Equation Banner -->
+                <div class="card" style="border-left: 4px solid var(--accent-blue);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <div style="font-weight: 600; font-size: 14px; color: var(--text-primary); margin-bottom: 4px;">
+                                Steady-State 1D Heat Conduction with Uniform Heat Generation
+                            </div>
+                            <div style="font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary);">
+                                Governing PDE: <span style="color:var(--accent-cyan); font-weight:600;">-d/dx(kA dT/dx) = qA</span> &bull;
+                                Dirichlet BCs: <span style="color:var(--accent-amber);">T(0) = 100 °C</span>, <span style="color:var(--accent-blue);">T(L) = 20 °C</span>
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <span class="metric-pill pill-success" id="thermal-status-badge">READY</span>
+                            <button class="btn-primary" id="btn-run-thermal">Run Simulation</button>
+                            <button class="btn-secondary" id="btn-run-convergence">Run Convergence Study</button>
+                        </div>
                     </div>
-                    <p style="color: var(--text-secondary); margin-bottom: 12px;">
-                        Numerical FEA simulation solving <code>-d/dx(kA dT/dx) = qA</code> using linear two-node elements.
-                    </p>
-                    <div class="metric-row">
-                        <span class="metric-label">Boundary Conditions</span>
-                        <span class="metric-value">T(0) = 100°C, T(L) = 20°C (Dirichlet Elimination Method)</span>
+                    <div class="progress-bar-container" id="thermal-progress-bar">
+                        <div class="progress-bar-fill" id="thermal-progress-fill"></div>
                     </div>
-                    <div class="metric-row">
-                        <span class="metric-label">Convergence Verification</span>
-                        <span class="metric-value">Mesh discretizations N = 10, 20, 40, 80 with exact analytical benchmark</span>
+                    <div id="thermal-error-banner" style="display:none; color:var(--accent-red); margin-top:8px; font-weight:500; font-size:12px;"></div>
+                </div>
+
+                <!-- Simulation Result KPI Cards -->
+                <div class="card-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">Discretization</span>
+                            <span class="metric-pill pill-info">Linear Elements</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Element Count (N)</span>
+                            <span class="metric-value" id="res-thermal-elements">10</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Active Nodes (N + 1)</span>
+                            <span class="metric-value" id="res-thermal-nodes">11</span>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">Thermal Extrema</span>
+                            <span class="metric-pill pill-success">Governing Peak</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Max Temperature</span>
+                            <span class="metric-value" id="res-thermal-max-temp" style="color:var(--accent-amber); font-weight:700;">185.00 °C</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Spatial Location</span>
+                            <span class="metric-value" id="res-thermal-max-temp-loc">at x = 0.500 m</span>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">Numerical Accuracy</span>
+                            <span class="metric-pill pill-info">Midpoint Norm</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Max Midpoint Error</span>
+                            <span class="metric-value" id="res-thermal-max-error" style="color:var(--accent-cyan); font-weight:700;">1.250000 °C</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Theoretical Bound</span>
+                            <span class="metric-value" id="res-thermal-theory-error">Theory: 1.250000 °C</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Layout: Left Parameters & Controls | Right Plotly Graphs & Results -->
+                <div class="thermal-grid">
+                    <!-- Left Column: Parameters Card -->
+                    <div style="display:flex; flex-direction:column; gap:16px;">
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">Simulation Parameters</span>
+                            </div>
+
+                            <div class="param-input-group">
+                                <label><span>Rod Length (L)</span> <span>[m]</span></label>
+                                <input type="number" id="thermal-param-length" value="1.0" step="0.1" min="0.01">
+                            </div>
+
+                            <div class="param-input-group">
+                                <label><span>Cross-Section Area (A)</span> <span>[m²]</span></label>
+                                <input type="number" id="thermal-param-area" value="0.0001" step="0.00001" min="1e-7">
+                            </div>
+
+                            <div class="param-input-group">
+                                <label><span>Conductivity (k)</span> <span>[W/(m·K)]</span></label>
+                                <input type="number" id="thermal-param-k" value="10.0" step="1.0" min="0.1">
+                            </div>
+
+                            <div class="param-input-group">
+                                <label><span>Heat Generation (q)</span> <span>[W/m³]</span></label>
+                                <input type="number" id="thermal-param-q" value="10000.0" step="500.0">
+                            </div>
+
+                            <div class="param-input-group">
+                                <label><span>Left Temp T(0)</span> <span>[°C]</span></label>
+                                <input type="number" id="thermal-param-t0" value="100.0" step="5.0">
+                            </div>
+
+                            <div class="param-input-group">
+                                <label><span>Right Temp T(L)</span> <span>[°C]</span></label>
+                                <input type="number" id="thermal-param-tl" value="20.0" step="5.0">
+                            </div>
+
+                            <div class="param-input-group">
+                                <label><span>Mesh Elements (N)</span> <span>Required</span></label>
+                                <select id="thermal-param-mesh">
+                                    <option value="10" selected>N = 10 Elements (h = 0.100 m)</option>
+                                    <option value="20">N = 20 Elements (h = 0.050 m)</option>
+                                    <option value="40">N = 40 Elements (h = 0.025 m)</option>
+                                    <option value="80">N = 80 Elements (h = 0.0125 m)</option>
+                                </select>
+                            </div>
+
+                            <div class="btn-group-row">
+                                <button class="btn-secondary" style="flex:1;" id="btn-reset-thermal">Reset Default</button>
+                            </div>
+                        </div>
+
+                        <!-- Data Export Card -->
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">Export Results</span>
+                            </div>
+                            <p style="color:var(--text-secondary); font-size:11px; margin-bottom:10px;">
+                                Export FEA numerical temperature profiles and convergence study data to CSV files.
+                            </p>
+                            <div style="display:flex; flex-direction:column; gap:8px;">
+                                <button class="btn-secondary" id="btn-export-thermal-csv">Export Temperature CSV</button>
+                                <button class="btn-secondary" id="btn-export-convergence-csv">Export Convergence Study CSV</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Scientific Visualizations & Data Tables -->
+                    <div style="display:flex; flex-direction:column; gap:16px;">
+                        <!-- Primary Temperature Distribution Graph -->
+                        <div class="chart-card">
+                            <div id="plot-temperature-distribution" class="plotly-chart"></div>
+                        </div>
+
+                        <!-- Secondary Graphs: Midpoint Error Distribution & Mesh Convergence Log-Log -->
+                        <div class="chart-container-2col">
+                            <div class="chart-card">
+                                <div id="plot-midpoint-error" class="plotly-chart"></div>
+                            </div>
+                            <div class="chart-card">
+                                <div id="plot-mesh-convergence" class="plotly-chart"></div>
+                            </div>
+                        </div>
+
+                        <!-- Numerical Tables Container -->
+                        <div class="card">
+                            <div class="tabs-header">
+                                <button class="tab-btn active" data-thermal-tab="convergence">Mesh Convergence Study (N=10, 20, 40, 80)</button>
+                                <button class="tab-btn" data-thermal-tab="nodal">Spatial Solution Data (Nodes & Midpoints)</button>
+                            </div>
+
+                            <!-- Tab 1: Convergence Table -->
+                            <div class="tab-content active" data-thermal-tab="convergence">
+                                <div class="table-container">
+                                    <table class="spec-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Mesh Size (N)</th>
+                                                <th>Nodes</th>
+                                                <th>Element Length (h)</th>
+                                                <th>Max Midpoint Error</th>
+                                                <th>Theoretical Error (125/N²)</th>
+                                                <th>Convergence Rate (α)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="table-convergence-body">
+                                            <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Running C++ convergence study...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Tab 2: Nodal & Midpoint Table -->
+                            <div class="tab-content" data-thermal-tab="nodal">
+                                <div class="table-container data-table-scrollable">
+                                    <table class="spec-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Classification</th>
+                                                <th>Index</th>
+                                                <th>Coordinate x [m]</th>
+                                                <th>FEM Temp [°C]</th>
+                                                <th>Exact Temp [°C]</th>
+                                                <th>Absolute Error</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="table-nodal-body">
+                                            <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Run simulation to view nodal results...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -497,6 +689,7 @@
     <!-- Application Script -->
     <script src="js/api.js"></script>
     <script src="js/geometry_viewer.js"></script>
+    <script src="js/thermal_analysis.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

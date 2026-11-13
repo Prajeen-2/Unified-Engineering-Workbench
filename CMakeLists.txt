@@ -32,6 +32,7 @@ set(CORE_SOURCES
     src/server/HttpServer.cpp
     src/geometry/StlParser.cpp
     src/geometry/CsvParser.cpp
+    src/thermal/ThermalSolver1D.cpp
 )
 
 # Main server executable
@@ -83,4 +84,10 @@ add_executable(test_geometry
     src/geometry/CsvParser.cpp
 )
 add_test(NAME GeometryAndCsvTests COMMAND test_geometry)
+
+add_executable(test_thermal
+    tests/test_thermal.cpp
+    src/thermal/ThermalSolver1D.cpp
+)
+add_test(NAME ThermalFEMTests COMMAND test_thermal)
 
