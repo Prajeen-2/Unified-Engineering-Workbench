@@ -228,3 +228,4 @@ class SettingsController {
 document.addEventListener('DOMContentLoaded', () => {
     window.settings = new SettingsController();
 });
+

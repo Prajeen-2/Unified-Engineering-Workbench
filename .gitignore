@@ -3,10 +3,10 @@ build/
 bin/
 out/
 *.obj
-*.exe
 *.pdb
 *.ilk
 *.idb
+*.exp
 
 # Visual Studio / IDE
 .vs/
@@ -15,7 +15,9 @@ out/
 *.sln
 *.suo
 *.user
-.vscode/
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
 
 # OS generated
 Thumbs.db
