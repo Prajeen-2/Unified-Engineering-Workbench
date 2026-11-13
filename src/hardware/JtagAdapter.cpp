@@ -5,6 +5,11 @@ namespace workbench::hardware {
 
 JtagAdapter::JtagAdapter() {
     m_state = DeviceState::Disconnected;
+    // Default registers (FT2232H MPSSE JTAG Engine)
+    m_registers[0x00] = 0x00000002; // Scan chain length (2 TAPs)
+    m_registers[0x04] = 15000000;   // TCK frequency (15.0 MHz)
+    m_registers[0x08] = 0x00000001; // Loopback enable flag
+    m_registers[0x0C] = 0x00000000; // Shift control register
 }
 
 DeviceState JtagAdapter::getState() const {
@@ -61,8 +66,12 @@ DeviceTelemetry JtagAdapter::pollTelemetry() {
 
     if (m_faultInjected) {
         telem.state = DeviceState::ErrorTimeout;
-        telem.lastLogMessage = "[TIMEOUT ERROR] USB-MPSSE transaction timed out waiting for TDO response. Peripheral communication bus stalled.";
-        telem.crcErrors++;
+        if (m_lastFaultReason == "checksum" || m_lastFaultReason == "checksum_failure") {
+            telem.lastLogMessage = "[CHECKSUM ERROR] JTAG bitstream framing checksum error. Shift data corrupted.";
+        } else {
+            telem.lastLogMessage = "[TIMEOUT ERROR] USB-MPSSE transaction timed out waiting for TDO response. Peripheral communication bus stalled.";
+        }
+        telem.crcErrors = m_crcErrors;
         return telem;
     }
 
@@ -120,6 +129,9 @@ bool JtagAdapter::injectFault(const std::string& faultType) {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_faultInjected = true;
     m_lastFaultReason = faultType.empty() ? "timeout" : faultType;
+    if (m_lastFaultReason == "checksum" || m_lastFaultReason == "checksum_failure") {
+        m_crcErrors++;
+    }
     m_state = DeviceState::ErrorTimeout;
     return true;
 }
@@ -136,6 +148,43 @@ bool JtagAdapter::recoverFault() {
     m_lastFaultReason.clear();
     m_currentTapState = "Run-Test/Idle";
     m_state = DeviceState::Connected;
+    return true;
+}
+
+bool JtagAdapter::writeRegister(uint32_t address, uint32_t value) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (m_state == DeviceState::Disconnected || m_faultInjected) {
+        return false;
+    }
+    m_registers[address] = value;
+    m_shiftsExecuted += 32;
+    return true;
+}
+
+bool JtagAdapter::readRegister(uint32_t address, uint32_t& outValue) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (m_state == DeviceState::Disconnected || m_faultInjected) {
+        return false;
+    }
+    auto it = m_registers.find(address);
+    if (it != m_registers.end()) {
+        outValue = it->second;
+    } else {
+        outValue = 0;
+    }
+    m_shiftsExecuted += 32;
+    return true;
+}
+
+bool JtagAdapter::verifyLoopback(const std::vector<uint8_t>& pattern, std::vector<uint8_t>& outEcho) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (m_state == DeviceState::Disconnected || m_faultInjected) {
+        outEcho.clear();
+        return false;
+    }
+    // High-speed shift simulation: TDI routed to TDO
+    outEcho = pattern;
+    m_shiftsExecuted += pattern.size() * 8;
     return true;
 }
 

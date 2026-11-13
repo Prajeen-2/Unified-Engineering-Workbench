@@ -200,6 +200,101 @@ void testElectricalSystemArchitectureMetadata() {
     std::cout << "  -> Passed: Complete electrical & systems integration metadata validated." << std::endl;
 }
 
+void testRegisterReadWriteAllTargets() {
+    std::cout << "[TEST 6] Testing Register Write/Read Across All 3 Targets (MCU, FPGA, JTAG)..." << std::endl;
+
+    auto& mgr = HardwareManager::instance();
+    mgr.connectAll();
+
+    // 1. MCU Register Test
+    uint32_t mcuVal = 0;
+    HW_REQUIRE(mgr.readRegister("mcu_stm32h7", 0x00, mcuVal), "MCU read register 0x00 failed");
+    HW_REQUIRE(mcuVal == 0x48000000, "MCU default device ID register mismatch");
+
+    HW_REQUIRE(mgr.writeRegister("mcu_stm32h7", 0x20, 0xCAFEBABE), "MCU write register 0x20 failed");
+    HW_REQUIRE(mgr.readRegister("mcu_stm32h7", 0x20, mcuVal), "MCU readback failed");
+    HW_REQUIRE(mcuVal == 0xCAFEBABE, "MCU readback value mismatch");
+    std::cout << "  -> MCU Register 0x20 readback verified: 0x" << std::hex << mcuVal << std::dec << std::endl;
+
+    // 2. FPGA Register Test
+    uint32_t fpgaVal = 0;
+    HW_REQUIRE(mgr.readRegister("fpga_artix7", 0x00, fpgaVal), "FPGA read register 0x00 failed");
+    HW_REQUIRE(fpgaVal == 0x0362D093, "FPGA default IDCODE register mismatch");
+
+    HW_REQUIRE(mgr.writeRegister("fpga_artix7", 0x14, 0xDEADBEEF), "FPGA write register 0x14 failed");
+    HW_REQUIRE(mgr.readRegister("fpga_artix7", 0x14, fpgaVal), "FPGA readback failed");
+    HW_REQUIRE(fpgaVal == 0xDEADBEEF, "FPGA readback value mismatch");
+    std::cout << "  -> FPGA Register 0x14 readback verified: 0x" << std::hex << fpgaVal << std::dec << std::endl;
+
+    // 3. JTAG Register Test
+    uint32_t jtagVal = 0;
+    HW_REQUIRE(mgr.readRegister("jtag_ft2232h", 0x04, jtagVal), "JTAG read register 0x04 failed");
+    HW_REQUIRE(jtagVal == 15000000, "JTAG default TCK frequency mismatch");
+
+    HW_REQUIRE(mgr.writeRegister("jtag_ft2232h", 0x04, 30000000), "JTAG write TCK freq failed");
+    HW_REQUIRE(mgr.readRegister("jtag_ft2232h", 0x04, jtagVal), "JTAG readback failed");
+    HW_REQUIRE(jtagVal == 30000000, "JTAG TCK 30 MHz readback mismatch");
+    std::cout << "  -> JTAG Register 0x04 readback verified: " << jtagVal << " Hz" << std::endl;
+
+    std::cout << "  -> Passed: Register read/write transactions verified across all 3 hardware devices." << std::endl;
+}
+
+void testChecksumAndTimeoutFaultInjection() {
+    std::cout << "[TEST 7] Testing Checksum and Timeout Fault Injection across Targets..." << std::endl;
+
+    auto& mgr = HardwareManager::instance();
+    mgr.connectAll();
+
+    // 1. Checksum fault injection on MCU
+    auto mcuBefore = mgr.getDevice("mcu_stm32h7")->pollTelemetry();
+    uint32_t initialCrc = mcuBefore.crcErrors;
+
+    HW_REQUIRE(mgr.injectFault("mcu_stm32h7", "checksum_failure"), "Inject checksum fault failed");
+    auto mcuFaultTelem = mgr.getDevice("mcu_stm32h7")->pollTelemetry();
+    HW_REQUIRE(mcuFaultTelem.crcErrors > initialCrc, "CRC error counter must increment on checksum fault");
+    HW_REQUIRE(mcuFaultTelem.lastLogMessage.find("CHECKSUM ERROR") != std::string::npos, "Log must record CHECKSUM ERROR");
+
+    // Register write during fault must fail
+    HW_REQUIRE(!mgr.writeRegister("mcu_stm32h7", 0x20, 0x12345678), "Register write must be rejected during fault state");
+
+    // Recover
+    HW_REQUIRE(mgr.recoverFault("mcu_stm32h7"), "MCU recovery failed");
+    HW_REQUIRE(mgr.writeRegister("mcu_stm32h7", 0x20, 0x12345678), "Register write must succeed after recovery");
+
+    // 2. Checksum fault injection on FPGA
+    HW_REQUIRE(mgr.injectFault("fpga_artix7", "checksum"), "FPGA checksum fault injection failed");
+    auto fpgaFaultTelem = mgr.getDevice("fpga_artix7")->pollTelemetry();
+    HW_REQUIRE(fpgaFaultTelem.lastLogMessage.find("CHECKSUM ERROR") != std::string::npos, "FPGA log must report checksum error");
+    HW_REQUIRE(mgr.recoverFault("fpga_artix7"), "FPGA recovery failed");
+
+    std::cout << "  -> Passed: Checksum and timeout fault injection and recovery verified." << std::endl;
+}
+
+void testJtagLoopbackVerification() {
+    std::cout << "[TEST 8] Testing Simulated JTAG TDI->TDO Loopback Shift Verification..." << std::endl;
+
+    auto& mgr = HardwareManager::instance();
+    mgr.connectDevice("jtag_ft2232h");
+
+    std::vector<uint8_t> testPattern = {0xAA, 0x55, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x00, 0xFF};
+    std::vector<uint8_t> echo;
+
+    HW_REQUIRE(mgr.verifyJtagLoopback(testPattern, echo), "Healthy JTAG loopback shift failed");
+    HW_REQUIRE(echo == testPattern, "JTAG loopback echo did not match transmitted bit pattern");
+    std::cout << "  -> Transmitted " << testPattern.size() << " bytes, received identical echo." << std::endl;
+
+    // Inject fault into JTAG and verify loopback is blocked
+    HW_REQUIRE(mgr.injectFault("jtag_ft2232h", "timeout"), "Inject fault on JTAG failed");
+    HW_REQUIRE(!mgr.verifyJtagLoopback(testPattern, echo), "JTAG loopback must fail when fault is active");
+
+    // Recover JTAG and verify loopback passes again
+    HW_REQUIRE(mgr.recoverFault("jtag_ft2232h"), "Recover JTAG failed");
+    HW_REQUIRE(mgr.verifyJtagLoopback(testPattern, echo), "JTAG loopback must succeed after recovery");
+    HW_REQUIRE(echo == testPattern, "Echo after recovery must match pattern");
+
+    std::cout << "  -> Passed: JTAG TDI->TDO loopback verified healthy, fault-blocked, and post-recovery." << std::endl;
+}
+
 int main() {
     std::cout << "==================================================" << std::endl;
     std::cout << "  UNIFIED ENGINEERING WORKBENCH - HARDWARE LAB   " << std::endl;
@@ -212,8 +307,11 @@ int main() {
         testTelemetryAcquisition();
         testRecoverableTimeoutFailureAndRecovery();
         testElectricalSystemArchitectureMetadata();
+        testRegisterReadWriteAllTargets();
+        testChecksumAndTimeoutFaultInjection();
+        testJtagLoopbackVerification();
 
-        std::cout << "\n>>> ALL 5/5 HARDWARE INTEGRATION TESTS PASSED SUCCESSFULLY! <<<" << std::endl;
+        std::cout << "\n>>> ALL 8/8 HARDWARE INTEGRATION TESTS PASSED SUCCESSFULLY! <<<" << std::endl;
         return 0;
     } catch (const std::exception& e) {
         std::cerr << "FATAL HARDWARE TEST EXCEPTION: " << e.what() << std::endl;

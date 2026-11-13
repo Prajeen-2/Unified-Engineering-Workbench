@@ -126,6 +126,16 @@ public:
     virtual bool injectFault(const std::string& faultType) = 0;
     virtual bool recoverFault() = 0;
 
+    // Register read/write interface for hardware target inspection
+    virtual bool writeRegister(uint32_t address, uint32_t value) {
+        (void)address; (void)value;
+        return false;
+    }
+    virtual bool readRegister(uint32_t address, uint32_t& outValue) {
+        (void)address; (void)outValue;
+        return false;
+    }
+
     // Simulation distinction
     virtual bool isSimulated() const { return true; }
 };

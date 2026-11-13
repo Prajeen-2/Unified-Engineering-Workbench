@@ -28,6 +28,13 @@ public:
     bool injectFault(const std::string& deviceId, const std::string& faultType = "timeout");
     bool recoverFault(const std::string& deviceId);
 
+    // Register write/read across targets
+    bool writeRegister(const std::string& deviceId, uint32_t address, uint32_t value);
+    bool readRegister(const std::string& deviceId, uint32_t address, uint32_t& outValue);
+
+    // JTAG loopback verification
+    bool verifyJtagLoopback(const std::vector<uint8_t>& pattern, std::vector<uint8_t>& outEcho);
+
     // Structural Electrical & System Architecture Metadata
     static nlohmann::json getSystemElectricalArchitecture();
 

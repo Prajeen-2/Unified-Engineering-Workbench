@@ -5,6 +5,10 @@ namespace workbench::hardware {
 
 FpgaDeviceAdapter::FpgaDeviceAdapter() {
     m_state = DeviceState::Disconnected;
+    // Default registers (Xilinx Artix-7)
+    m_registers[0x00] = 0x0362D093; // 7-Series Artix-7 IDCODE
+    m_registers[0x04] = 0x00000001; // Configuration Control (PROG_B / DONE)
+    m_registers[0x08] = 0x00000000; // User Scratch / Status
 }
 
 DeviceState FpgaDeviceAdapter::getState() const {
@@ -60,8 +64,12 @@ DeviceTelemetry FpgaDeviceAdapter::pollTelemetry() {
 
     if (m_faultInjected) {
         telem.state = DeviceState::ErrorTimeout;
-        telem.lastLogMessage = "[TIMEOUT ERROR] FPGA synchronous FIFO handshake timed out (NO_ACK on pin DONE).";
-        telem.crcErrors++;
+        if (m_lastFaultReason == "checksum" || m_lastFaultReason == "checksum_failure") {
+            telem.lastLogMessage = "[CHECKSUM ERROR] FPGA bitstream / packet CRC-32 mismatch (0xBADF00D).";
+        } else {
+            telem.lastLogMessage = "[TIMEOUT ERROR] FPGA synchronous FIFO handshake timed out (NO_ACK on pin DONE).";
+        }
+        telem.crcErrors = m_crcErrors;
         return telem;
     }
 
@@ -107,6 +115,9 @@ bool FpgaDeviceAdapter::injectFault(const std::string& faultType) {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_faultInjected = true;
     m_lastFaultReason = faultType.empty() ? "timeout" : faultType;
+    if (m_lastFaultReason == "checksum" || m_lastFaultReason == "checksum_failure") {
+        m_crcErrors++;
+    }
     m_state = DeviceState::ErrorTimeout;
     return true;
 }
@@ -120,6 +131,33 @@ bool FpgaDeviceAdapter::recoverFault() {
     m_faultInjected = false;
     m_lastFaultReason.clear();
     m_state = DeviceState::Connected;
+    return true;
+}
+
+bool FpgaDeviceAdapter::writeRegister(uint32_t address, uint32_t value) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (m_state == DeviceState::Disconnected || m_faultInjected) {
+        return false;
+    }
+    m_registers[address] = value;
+    m_packetsTx++;
+    m_packetsRx++;
+    return true;
+}
+
+bool FpgaDeviceAdapter::readRegister(uint32_t address, uint32_t& outValue) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (m_state == DeviceState::Disconnected || m_faultInjected) {
+        return false;
+    }
+    auto it = m_registers.find(address);
+    if (it != m_registers.end()) {
+        outValue = it->second;
+    } else {
+        outValue = 0;
+    }
+    m_packetsTx++;
+    m_packetsRx++;
     return true;
 }
 

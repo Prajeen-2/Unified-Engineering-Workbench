@@ -158,6 +158,39 @@ void testFullTrainingConvergence100Steps() {
     std::cout << "  -> Passed: Full 100-step training convergence and gradient verification confirmed." << std::endl;
 }
 
+void testDeterministicReproducibility() {
+    std::cout << "[TEST 6] Testing Deterministic Run Reproducibility Across 100 Steps..." << std::endl;
+
+    TrainingConfig cfg;
+    cfg.x = 1.0;
+    cfg.y = 2.0;
+    cfg.initialParams = {0.5, 0.0, 1.0, 0.0};
+    cfg.learningRate = 0.1;
+    cfg.numSteps = 100;
+    cfg.epsilon = 1.0e-6;
+    cfg.maxTolerance = 1.0e-5;
+
+    auto run1 = NeuralNetRegression::train(cfg);
+    auto run2 = NeuralNetRegression::train(cfg);
+
+    NEURAL_REQUIRE(run1.success && run2.success, "Both training runs must succeed");
+    NEURAL_REQUIRE(run1.stepHistory.size() == run2.stepHistory.size(), "History size mismatch");
+
+    for (size_t i = 0; i < run1.stepHistory.size(); ++i) {
+        const auto& s1 = run1.stepHistory[i];
+        const auto& s2 = run2.stepHistory[i];
+        NEURAL_REQUIRE(s1.step == s2.step, "Step index mismatch");
+        NEURAL_REQUIRE(std::abs(s1.params.w - s2.params.w) < 1.0e-14, "Weight w bit-mismatch");
+        NEURAL_REQUIRE(std::abs(s1.params.b - s2.params.b) < 1.0e-14, "Bias b bit-mismatch");
+        NEURAL_REQUIRE(std::abs(s1.params.v - s2.params.v) < 1.0e-14, "Weight v bit-mismatch");
+        NEURAL_REQUIRE(std::abs(s1.params.c - s2.params.c) < 1.0e-14, "Bias c bit-mismatch");
+        NEURAL_REQUIRE(std::abs(s1.loss - s2.loss) < 1.0e-14, "Loss bit-mismatch");
+    }
+
+    std::cout << "  -> Verified bit-identical parameter state across all 100 steps." << std::endl;
+    std::cout << "  -> Passed: Deterministic convergence repeatability confirmed." << std::endl;
+}
+
 int main() {
     std::cout << "==================================================" << std::endl;
     std::cout << "  UNIFIED ENGINEERING WORKBENCH - NEURAL LAB     " << std::endl;
@@ -170,8 +203,9 @@ int main() {
         testCentralDifferenceGradientChecking();
         testSimultaneousGradientDescentUpdate();
         testFullTrainingConvergence100Steps();
+        testDeterministicReproducibility();
 
-        std::cout << "\n>>> ALL 5/5 MANUAL BACKPROPAGATION TESTS PASSED SUCCESSFULLY! <<<" << std::endl;
+        std::cout << "\n>>> ALL 6/6 MANUAL BACKPROPAGATION TESTS PASSED SUCCESSFULLY! <<<" << std::endl;
         return 0;
     } catch (const std::exception& e) {
         std::cerr << "FATAL NEURAL TEST EXCEPTION: " << e.what() << std::endl;

@@ -119,6 +119,36 @@ bool HardwareManager::recoverFault(const std::string& deviceId) {
     return false;
 }
 
+bool HardwareManager::writeRegister(const std::string& deviceId, uint32_t address, uint32_t value) {
+    std::lock_guard<std::mutex> lock(m_managerMutex);
+    auto it = m_devices.find(deviceId);
+    if (it != m_devices.end()) {
+        return it->second->writeRegister(address, value);
+    }
+    return false;
+}
+
+bool HardwareManager::readRegister(const std::string& deviceId, uint32_t address, uint32_t& outValue) {
+    std::lock_guard<std::mutex> lock(m_managerMutex);
+    auto it = m_devices.find(deviceId);
+    if (it != m_devices.end()) {
+        return it->second->readRegister(address, outValue);
+    }
+    return false;
+}
+
+bool HardwareManager::verifyJtagLoopback(const std::vector<uint8_t>& pattern, std::vector<uint8_t>& outEcho) {
+    std::lock_guard<std::mutex> lock(m_managerMutex);
+    auto it = m_devices.find("jtag_ft2232h");
+    if (it != m_devices.end()) {
+        auto* jtag = dynamic_cast<JtagAdapter*>(it->second.get());
+        if (jtag) {
+            return jtag->verifyLoopback(pattern, outEcho);
+        }
+    }
+    return false;
+}
+
 nlohmann::json HardwareManager::getSystemElectricalArchitecture() {
     return nlohmann::json{
         {"system_title", "Tri-Device Heterogeneous Embedded System Integration"},

@@ -5,6 +5,11 @@ namespace workbench::hardware {
 
 McuDeviceAdapter::McuDeviceAdapter() {
     m_state = DeviceState::Disconnected;
+    // Default peripheral register map (ARM Cortex-M7 / STM32H753)
+    m_registers[0x00] = 0x48000000; // Device ID / Core ID
+    m_registers[0x04] = 0x00000001; // CR1: Enable
+    m_registers[0x08] = 0x00000010; // Prescaler: /16
+    m_registers[0x0C] = 0x00000000; // Scratch / Status
 }
 
 DeviceState McuDeviceAdapter::getState() const {
@@ -61,8 +66,12 @@ DeviceTelemetry McuDeviceAdapter::pollTelemetry() {
 
     if (m_faultInjected) {
         telem.state = DeviceState::ErrorTimeout;
-        telem.lastLogMessage = "[TIMEOUT ERROR] MCU response timed out after 1000 ms. USART ACK frame lost.";
-        telem.crcErrors++;
+        if (m_lastFaultReason == "checksum" || m_lastFaultReason == "checksum_failure") {
+            telem.lastLogMessage = "[CHECKSUM ERROR] MCU frame checksum verification failed. Frame discarded.";
+        } else {
+            telem.lastLogMessage = "[TIMEOUT ERROR] MCU response timed out after 1000 ms. USART ACK frame lost.";
+        }
+        telem.crcErrors = m_crcErrors;
         return telem;
     }
 
@@ -110,6 +119,9 @@ bool McuDeviceAdapter::injectFault(const std::string& faultType) {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_faultInjected = true;
     m_lastFaultReason = faultType.empty() ? "timeout" : faultType;
+    if (m_lastFaultReason == "checksum" || m_lastFaultReason == "checksum_failure") {
+        m_crcErrors++;
+    }
     m_state = DeviceState::ErrorTimeout;
     return true;
 }
@@ -123,6 +135,33 @@ bool McuDeviceAdapter::recoverFault() {
     m_faultInjected = false;
     m_lastFaultReason.clear();
     m_state = DeviceState::Connected;
+    return true;
+}
+
+bool McuDeviceAdapter::writeRegister(uint32_t address, uint32_t value) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (m_state == DeviceState::Disconnected || m_faultInjected) {
+        return false;
+    }
+    m_registers[address] = value;
+    m_packetsTx++;
+    m_packetsRx++;
+    return true;
+}
+
+bool McuDeviceAdapter::readRegister(uint32_t address, uint32_t& outValue) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (m_state == DeviceState::Disconnected || m_faultInjected) {
+        return false;
+    }
+    auto it = m_registers.find(address);
+    if (it != m_registers.end()) {
+        outValue = it->second;
+    } else {
+        outValue = 0;
+    }
+    m_packetsTx++;
+    m_packetsRx++;
     return true;
 }
 

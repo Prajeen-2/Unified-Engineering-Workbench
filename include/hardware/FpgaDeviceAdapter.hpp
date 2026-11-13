@@ -3,6 +3,7 @@
 #include "hardware/IHardwareDevice.hpp"
 #include <mutex>
 #include <random>
+#include <unordered_map>
 
 namespace workbench::hardware {
 
@@ -24,6 +25,9 @@ public:
     bool injectFault(const std::string& faultType) override;
     bool recoverFault() override;
 
+    bool writeRegister(uint32_t address, uint32_t value) override;
+    bool readRegister(uint32_t address, uint32_t& outValue) override;
+
 private:
     mutable std::mutex m_mutex;
     DeviceState m_state{DeviceState::Disconnected};
@@ -33,6 +37,7 @@ private:
     uint32_t m_crcErrors{0};
     bool m_faultInjected{false};
     std::string m_lastFaultReason;
+    std::unordered_map<uint32_t, uint32_t> m_registers;
 
     std::mt19937 m_rng{202};
 };
