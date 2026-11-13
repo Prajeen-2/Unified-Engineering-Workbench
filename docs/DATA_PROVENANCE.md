@@ -1,44 +1,49 @@
 # DATA PROVENANCE AND PHYSICAL UNITS SPECIFICATION
 ## Task B: 3D CAD Geometry & Temperature Field Benchmarks
 
-### 1. Synthetic STL Geometry: `engineering_bracket.stl`
+### 1. Benchmark STL Geometry: `engineering_bracket.stl`
 
 - **File Path**: `data/stl/engineering_bracket.stl`
 - **File Format**: Standard ASCII Stereolithography (STL)
-- **Geometry Description**: Watertight, manifold structural L-bracket comprising a horizontal mounting plate and a vertical load-bearing flange.
+- **Geometry Description**: Representative structural engineering L-bracket comprising a horizontal mounting flange and a vertical load-bearing column.
 - **Physical Dimensional Units**: Meters ($m$)
 - **Spatial Bounds**:
-  - $X \in [0.000, 0.100] \text{ m}$ (100 mm overall length)
-  - $Y \in [0.000, 0.050] \text{ m}$ (50 mm width)
-  - $Z \in [0.000, 0.080] \text{ m}$ (80 mm overall height)
-- **Mesh Topology**:
+  - $X \in [0.000, 0.100] \text{ m}$ (100.0 mm overall length)
+  - $Y \in [0.000, 0.050] \text{ m}$ (50.0 mm width)
+  - $Z \in [0.000, 0.080] \text{ m}$ (80.0 mm overall height)
+- **Mesh Topology & Edge Audit**:
   - Total Triangular Facets: $20$
   - Total Vertex Coordinates: $60$ (3 per facet)
-  - Outward Surface Normals: Unit vectors adhering to the right-hand rule
-  - Surface Area: $0.02715 \text{ m}^2$
-- **Generation Methodology**: Synthesized directly in ISO C++ conforming to the ASTM STL specification.
+  - Total Unique Edges: $36$
+  - Surface Area: $0.02715 \text{ m}^2$ ($27,150 \text{ mm}^2$)
+  - **Manifold Status Audit**: Edge adjacency analysis indicates 12 boundary edges (edges shared by only 1 triangle) occurring at the geometric step-joint intersection and back-wall boundary. In strict computational topology, this 20-facet model represents an open coarse CAD boundary representation with T-junctions rather than a closed, watertight 2-manifold solid. The viewer safely handles this topology without manifoldness assumptions.
+- **Generation Methodology**: Synthesized directly in ISO C++ adhering to the ASCII STL standard specification.
 
 ---
 
-### 2. Synthetic Temperature Field: `synthetic_thermal_field.csv`
+### 2. Benchmark Temperature Field: `synthetic_thermal_field.csv`
 
 - **File Path**: `data/csv/synthetic_thermal_field.csv`
-- **File Format**: ANSYS Mechanical / APDL compatible comma-separated values (CSV)
-- **Required Header Columns**: `node_id,x_m,y_m,z_m,temperature_C`
-- **Physical Units**:
-  - `node_id`: Non-negative integer index (dimensionless, unique)
+- **File Format**: Comma-separated values (CSV) matching ANSYS Mechanical / APDL nodal export conventions.
+- **Naming Rationale ("ANSYS CSV")**: Named "ANSYS CSV" in the UI and internship specifications because its structure (`node_id,x_m,y_m,z_m,temperature_C`) reflects the standard column export schema used by ANSYS FEA thermal post-processors.
+- **Synthetic Benchmark Generation**: Generated via a deterministic synthetic mathematical thermal model for reproducible benchmarking of Task B point cloud parsing and visualization.
+- **Spatial Grid Topology**:
+  - Regular structured nodal grid: $6$ stations in $X$, $6$ stations in $Y$, $3$ stations in $Z$.
+  - Total Validated Nodes: $6 \times 6 \times 3 = 108$ nodes.
+  - Spatial extent: $x \in [0.0, 0.100]\text{ m}$, $y \in [0.0, 0.050]\text{ m}$, $z \in [0.0, 0.015]\text{ m}$ spanning the horizontal mounting flange.
+- **Required Header Columns & Units**:
+  - `node_id`: Non-negative integer index (dimensionless, 1 to 108, strictly unique)
   - `x_m`: Cartesian X-coordinate in meters ($m$)
   - `y_m`: Cartesian Y-coordinate in meters ($m$)
   - `z_m`: Cartesian Z-coordinate in meters ($m$)
-  - `temperature_C`: Local thermal temperature in degrees Celsius ($^\circ\text{C}$)
+  - `temperature_C`: Local temperature in degrees Celsius ($^\circ\text{C}$)
 - **Thermal Governing Equation & Physical Model**:
   Represents steady-state conductive-convective heat dissipation through an isotropic structural alloy bracket ($k = 45 \text{ W/(m}\cdot\text{K)}$).
   The base boundary at $x = 0$ is in contact with an isothermal thermal reservoir ($T_{\text{source}} = 150.0^\circ\text{C}$), cooling asymptotically toward ambient air ($T_{\infty} = 25.0^\circ\text{C}$) with exponential longitudinal decay and transverse Biot-dependent gradients:
   $$T(x,y,z) = 25.0 + 125.0 \cdot e^{-20.0 x} \left[0.8 + 0.2 \cos\left(2\pi \frac{y - 0.025}{0.05}\right)\right] - 5.0 \left(\frac{z}{0.015}\right)$$
 - **Dataset Metrics**:
-  - Total Validated Nodes: $108$
   - Minimum Temperature: $37.76^\circ\text{C}$ (Tip extremity)
   - Maximum Temperature: $150.00^\circ\text{C}$ (Root heat source)
   - Mean Field Temperature: $80.24^\circ\text{C}$
-  - Non-finite rejection: Tested and validated zero $NaN$, zero $\pm\infty$.
+  - Non-finite rejection: Tested and validated zero $NaN$, zero $\pm\infty$, strictly above absolute zero ($-273.15^\circ\text{C}$).
 

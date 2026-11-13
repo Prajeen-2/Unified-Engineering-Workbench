@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 850 540" width="850" height="540">
+  <rect width="100%" height="100%" fill="#0d1117"/>
+  <text x="425" y="38" fill="#f0f6fc" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" text-anchor="middle">Neural Backpropagation Loss &amp; Gradient Verification</text>
+  <text x="425" y="62" fill="#8b949e" font-family="system-ui, sans-serif" font-size="13" text-anchor="middle">Logarithmic Loss Trajectory &amp; Central Difference Derivative Verification (x=1.0, y=2.0) | Task F</text>
+  <rect x="120" y="90" width="630" height="360" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+  <line x1="120" y1="99.7297" x2="750" y2="99.7297" stroke="#21262d" stroke-width="1"/>
+  <text x="108" y="103.73" fill="#d2a8ff" font-family="monospace" font-size="11" text-anchor="end">10^(0)</text>
+  <line x1="120" y1="158.108" x2="750" y2="158.108" stroke="#21262d" stroke-width="1"/>
+  <text x="108" y="162.108" fill="#d2a8ff" font-family="monospace" font-size="11" text-anchor="end">10^(-3)</text>
+  <line x1="120" y1="216.486" x2="750" y2="216.486" stroke="#21262d" stroke-width="1"/>
+  <text x="108" y="220.486" fill="#d2a8ff" font-family="monospace" font-size="11" text-anchor="end">10^(-6)</text>
+  <line x1="120" y1="274.865" x2="750" y2="274.865" stroke="#21262d" stroke-width="1"/>
+  <text x="108" y="278.865" fill="#d2a8ff" font-family="monospace" font-size="11" text-anchor="end">10^(-9)</text>
+  <line x1="120" y1="333.243" x2="750" y2="333.243" stroke="#21262d" stroke-width="1"/>
+  <text x="108" y="337.243" fill="#d2a8ff" font-family="monospace" font-size="11" text-anchor="end">10^(-12)</text>
+  <line x1="120" y1="391.622" x2="750" y2="391.622" stroke="#21262d" stroke-width="1"/>
+  <text x="108" y="395.622" fill="#d2a8ff" font-family="monospace" font-size="11" text-anchor="end">10^(-15)</text>
+  <line x1="120" y1="450" x2="750" y2="450" stroke="#21262d" stroke-width="1"/>
+  <text x="108" y="454" fill="#d2a8ff" font-family="monospace" font-size="11" text-anchor="end">10^(-18)</text>
+  <line x1="120" y1="90" x2="120" y2="450" stroke="#21262d" stroke-width="1"/>
+  <text x="120" y="472" fill="#8b949e" font-family="monospace" font-size="11" text-anchor="middle">0</text>
+  <line x1="246" y1="90" x2="246" y2="450" stroke="#21262d" stroke-width="1"/>
+  <text x="246" y="472" fill="#8b949e" font-family="monospace" font-size="11" text-anchor="middle">20</text>
+  <line x1="372" y1="90" x2="372" y2="450" stroke="#21262d" stroke-width="1"/>
+  <text x="372" y="472" fill="#8b949e" font-family="monospace" font-size="11" text-anchor="middle">40</text>
+  <line x1="498" y1="90" x2="498" y2="450" stroke="#21262d" stroke-width="1"/>
+  <text x="498" y="472" fill="#8b949e" font-family="monospace" font-size="11" text-anchor="middle">60</text>
+  <line x1="624" y1="90" x2="624" y2="450" stroke="#21262d" stroke-width="1"/>
+  <text x="624" y="472" fill="#8b949e" font-family="monospace" font-size="11" text-anchor="middle">80</text>
+  <line x1="750" y1="90" x2="750" y2="450" stroke="#21262d" stroke-width="1"/>
+  <text x="750" y="472" fill="#8b949e" font-family="monospace" font-size="11" text-anchor="middle">100</text>
+  <text x="435" y="498" fill="#c9d1d9" font-family="system-ui, sans-serif" font-size="13" font-weight="600" text-anchor="middle">Gradient Descent Optimization Iteration (Epoch)</text>
+  <text x="32" y="270" fill="#d2a8ff" font-family="system-ui, sans-serif" font-size="13" font-weight="600" text-anchor="middle" transform="rotate(-90 32 270)">Squared Error Loss J(w,b,v,c) (Log Scale)</text>
+  <polyline fill="none" stroke="#a371f7" stroke-width="3" points="120,98.3128 126.3,102.918 132.6,107.128 138.9,111.178 145.2,115.149 151.5,119.078 157.8,122.982 164.1,126.868 170.4,130.743 176.7,134.611 183,138.472 189.3,142.329 195.6,146.184 201.9,150.035 208.2,153.885 214.5,157.734 220.8,161.581 227.1,165.427 233.4,169.273 239.7,173.118 246,176.963 252.3,180.808 258.6,184.652 264.9,188.496 271.2,192.34 277.5,196.183 283.8,200.027 290.1,203.87 296.4,207.714 302.7,211.557 309,215.4 315.3,219.244 321.6,223.087 327.9,226.93 334.2,230.773 340.5,234.617 346.8,238.46 353.1,242.303 359.4,246.146 365.7,249.989 372,253.832 378.3,257.676 384.6,261.519 390.9,265.362 397.2,269.205 403.5,273.048 409.8,276.891 416.1,280.735 422.4,284.578 428.7,288.421 435,292.264 441.3,296.107 447.6,299.95 453.9,303.793 460.2,307.637 466.5,311.48 472.8,315.323 479.1,319.166 485.4,323.009 491.7,326.852 498,330.696 504.3,334.539 510.6,338.382 516.9,342.225 523.2,346.068 529.5,349.911 535.8,353.754 542.1,357.598 548.4,361.441 554.7,365.284 561,369.127 567.3,372.97 573.6,376.813 579.9,380.656 586.2,384.5 592.5,388.343 598.8,392.186 605.1,396.029 611.4,399.872 617.7,403.715 624,407.558 630.3,411.402 636.6,415.245 642.9,419.088 649.2,422.931 655.5,426.774 661.8,430.617 668.1,434.461 674.4,438.304 680.7,442.147 687,445.99 693.3,449.833 699.6,450 705.9,450 712.2,450 718.5,450 724.8,450 731.1,450 737.4,450 743.7,450 750,450"/>
+  <circle cx="120" cy="98.3128" r="4.5" fill="#d2a8ff" stroke="#fff" stroke-width="1.5"/>
+  <circle cx="183" cy="138.472" r="4.5" fill="#d2a8ff" stroke="#fff" stroke-width="1.5"/>
+  <circle cx="246" cy="176.963" r="4.5" fill="#d2a8ff" stroke="#fff" stroke-width="1.5"/>
+  <circle cx="309" cy="215.4" r="4.5" fill="#d2a8ff" stroke="#fff" stroke-width="1.5"/>
+  <circle cx="372" cy="253.832" r="4.5" fill="#d2a8ff" stroke="#fff" stroke-width="1.5"/>
+  <circle cx="435" cy="292.264" r="4.5" fill="#d2a8ff" stroke="#fff" stroke-width="1.5"/>
+  <circle cx="498" cy="330.696" r="4.5" fill="#d2a8ff" stroke="#fff" stroke-width="1.5"/>
+  <circle cx="561" cy="369.127" r="4.5" fill="#d2a8ff" stroke="#fff" stroke-width="1.5"/>
+  <circle cx="624" cy="407.558" r="4.5" fill="#d2a8ff" stroke="#fff" stroke-width="1.5"/>
+  <circle cx="687" cy="445.99" r="4.5" fill="#d2a8ff" stroke="#fff" stroke-width="1.5"/>
+  <circle cx="750" cy="450" r="4.5" fill="#d2a8ff" stroke="#fff" stroke-width="1.5"/>
+  <rect x="440" y="105" width="290" height="110" fill="#0d1117" fill-opacity="0.9" stroke="#30363d" rx="6"/>
+  <line x1="455" y1="125" x2="485" y2="125" stroke="#a371f7" stroke-width="3"/>
+  <circle cx="470" cy="125" r="4" fill="#d2a8ff" stroke="#fff" stroke-width="1.5"/>
+  <text x="495" y="129" fill="#f0f6fc" font-family="system-ui, sans-serif" font-size="12" font-weight="600">MSE Loss Trajectory</text>
+  <text x="455" y="152" fill="#7ee787" font-family="monospace" font-size="11">Initial Loss: 1.1825418</text>
+  <text x="455" y="169" fill="#7ee787" font-family="monospace" font-size="11">Final Loss:   1.70262e-20 (&lt; 1e-19)</text>
+  <text x="455" y="186" fill="#58a6ff" font-family="monospace" font-size="11">Max Num Grad Err: 1.607e-10</text>
+  <text x="455" y="203" fill="#3fb950" font-family="monospace" font-size="11">Verification: PASS (Tol: 1e-5)</text>
+</svg>

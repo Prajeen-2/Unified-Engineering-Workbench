@@ -1,0 +1,8 @@
+# Unified Engineering Workbench - Task C 1D Thermal FEM Mesh Convergence
+# Governing Equation: -d/dx(kA dT/dx) = qA, L=1m, A=1e-4m^2, k=10W/(m K), q=10000W/m^3
+# T(0)=100 C, T(L)=20 C. Theoretical Error = q*h^2 / (8k) = 125 * h^2
+N,h,T_mid_fem,T_mid_exact,error
+10,0.100000,178.500000,179.750000,1.25000000
+20,0.050000,182.375000,182.687500,0.31250000
+40,0.025000,183.843750,183.921875,0.07812500
+80,0.012500,184.460938,184.480469,0.01953125

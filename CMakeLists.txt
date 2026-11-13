@@ -129,3 +129,14 @@ add_executable(test_neural
 )
 add_test(NAME NeuralBackpropTests COMMAND test_neural)
 
+add_executable(generate_results
+    src/tools/generate_results.cpp
+    src/thermal/ThermalSolver1D.cpp
+    src/performance/PerformanceBenchmark.cpp
+    src/performance/ThreadPool.cpp
+    src/neural/NeuralNetRegression.cpp
+    src/core/SystemInfo.cpp
+    src/core/Logger.cpp
+)
+
+
