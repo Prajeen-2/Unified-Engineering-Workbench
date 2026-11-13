@@ -41,3 +41,4 @@
   - Maximum Temperature: $150.00^\circ\text{C}$ (Root heat source)
   - Mean Field Temperature: $80.24^\circ\text{C}$
   - Non-finite rejection: Tested and validated zero $NaN$, zero $\pm\infty$.
+

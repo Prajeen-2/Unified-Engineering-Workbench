@@ -261,3 +261,4 @@ StlParseResult StlParser::parseAsciiFile(const std::string& filePath) {
 }
 
 } // namespace workbench::geometry
+

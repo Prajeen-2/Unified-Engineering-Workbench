@@ -229,3 +229,4 @@ CsvParseResult CsvParser::parseFile(const std::string& filePath) {
 }
 
 } // namespace workbench::geometry
+

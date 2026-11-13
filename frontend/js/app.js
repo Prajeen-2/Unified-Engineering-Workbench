@@ -18,31 +18,47 @@ document.addEventListener('DOMContentLoaded', () => {
     let pollTimer = null;
 
     // View Navigation Controller
+    window.switchModule = (targetModule) => {
+        const item = document.querySelector(`.nav-item[data-module="${targetModule}"]`);
+        if (!item) return;
+
+        // Update sidebar state
+        navItems.forEach(n => n.classList.remove('active'));
+        item.classList.add('active');
+
+        // Update views
+        viewPanels.forEach(panel => {
+            if (panel.id === `view-${targetModule}`) {
+                panel.classList.add('active');
+            } else {
+                panel.classList.remove('active');
+            }
+        });
+
+        // Update top bar title
+        const label = item.querySelector('.nav-label')?.innerText || targetModule;
+        moduleTitle.innerText = label;
+        currentModule = targetModule;
+
+        if (targetModule === 'geometry' && window.geometryViewer) {
+            window.geometryViewer.onWindowResize();
+        }
+    };
+
     navItems.forEach(item => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
             const targetModule = item.dataset.module;
             if (!targetModule) return;
-
-            // Update sidebar state
-            navItems.forEach(n => n.classList.remove('active'));
-            item.classList.add('active');
-
-            // Update views
-            viewPanels.forEach(panel => {
-                if (panel.id === `view-${targetModule}`) {
-                    panel.classList.add('active');
-                } else {
-                    panel.classList.remove('active');
-                }
-            });
-
-            // Update top bar title
-            const label = item.querySelector('.nav-label')?.innerText || targetModule;
-            moduleTitle.innerText = label;
-            currentModule = targetModule;
+            window.switchModule(targetModule);
+            window.location.hash = targetModule;
         });
     });
+
+    if (window.location.hash) {
+        const initial = window.location.hash.replace('#', '');
+        window.switchModule(initial);
+    }
 
     // Toast Notification System
     window.showToast = (message, type = 'info') => {
