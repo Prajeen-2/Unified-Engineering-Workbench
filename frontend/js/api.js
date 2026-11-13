@@ -61,6 +61,22 @@ class WorkbenchApi {
     async shutdown() {
         return this.request('/api/system/shutdown', { method: 'POST' });
     }
+
+    async runPerformanceBenchmark(config = {}) {
+        return this.request('/api/performance/benchmark', {
+            method: 'POST',
+            body: JSON.stringify(config)
+        });
+    }
+
+    getPerformanceExportCsvUrl(config = {}) {
+        const params = new URLSearchParams();
+        if (config.num_cases) params.set('cases', config.num_cases);
+        if (config.num_elements) params.set('elements', config.num_elements);
+        if (config.random_seed) params.set('seed', config.random_seed);
+        if (config.repetitions) params.set('repetitions', config.repetitions);
+        return `${this.baseUrl}/api/performance/export-csv?${params.toString()}`;
+    }
 }
 
 window.api = new WorkbenchApi();

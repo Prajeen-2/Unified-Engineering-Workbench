@@ -359,3 +359,4 @@ ConvergenceStudyResult ThermalSolver1D::runConvergenceStudy(const ThermalParamet
 }
 
 } // namespace workbench::thermal
+

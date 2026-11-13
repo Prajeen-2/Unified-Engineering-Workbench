@@ -11,6 +11,8 @@
 #include "geometry/StlParser.hpp"
 #include "geometry/CsvParser.hpp"
 #include "thermal/ThermalSolver1D.hpp"
+#include "performance/ThreadPool.hpp"
+#include "performance/PerformanceBenchmark.hpp"
 #include "httplib/httplib.h"
 #include "nlohmann/json.hpp"
 #include <filesystem>
@@ -251,6 +253,51 @@ void HttpServer::setupRoutes() {
         res.set_header("Access-Control-Allow-Origin", "*");
     });
 
+    // Multicore Performance Lab Benchmark endpoint
+    m_server->Post("/api/performance/benchmark", [](const httplib::Request& req, httplib::Response& res) {
+        performance::BenchmarkConfig config;
+        if (!req.body.empty()) {
+            try {
+                auto j = nlohmann::json::parse(req.body);
+                config = performance::BenchmarkConfig::fromJson(j);
+            } catch (const std::exception& e) {
+                nlohmann::json errRes = {
+                    {"success", false},
+                    {"error_message", std::string("Malformed JSON payload: ") + e.what()}
+                };
+                res.set_content(errRes.dump(2), "application/json");
+                res.set_header("Access-Control-Allow-Origin", "*");
+                return;
+            }
+        }
+
+        double launchToReady = core::SystemInfoProvider::getLaunchToReadyMs();
+        core::Logger::instance().info("Executing Performance Lab Multicore Benchmark: " + 
+            std::to_string(config.numCases) + " cases, " + 
+            std::to_string(config.numElements) + " elements, " + 
+            std::to_string(config.repetitions) + " reps.");
+
+        auto suiteResult = performance::PerformanceBenchmark::runSuite(config, launchToReady);
+        res.set_content(suiteResult.toJson().dump(2), "application/json");
+        res.set_header("Access-Control-Allow-Origin", "*");
+    });
+
+    // Performance Lab CSV Export endpoint
+    m_server->Get("/api/performance/export-csv", [](const httplib::Request& req, httplib::Response& res) {
+        performance::BenchmarkConfig config;
+        if (req.has_param("cases")) config.numCases = std::stoul(req.get_param_value("cases"));
+        if (req.has_param("elements")) config.numElements = std::stoul(req.get_param_value("elements"));
+        if (req.has_param("seed")) config.randomSeed = std::stoul(req.get_param_value("seed"));
+        if (req.has_param("repetitions")) config.repetitions = std::stoul(req.get_param_value("repetitions"));
+
+        double launchToReady = core::SystemInfoProvider::getLaunchToReadyMs();
+        auto suiteResult = performance::PerformanceBenchmark::runSuite(config, launchToReady);
+
+        res.set_content(suiteResult.toCsv(), "text/csv");
+        res.set_header("Content-Disposition", "attachment; filename=\"multicore_benchmark_results.csv\"");
+        res.set_header("Access-Control-Allow-Origin", "*");
+    });
+
     // Graceful shutdown endpoint
     m_server->Post("/api/system/shutdown", [this](const httplib::Request&, httplib::Response& res) {
         core::Logger::instance().info("Received shutdown request via REST API.");
@@ -318,6 +365,7 @@ bool HttpServer::start() {
     }
 
     core::Logger::instance().info("HTTP Server successfully bound to " + getBaseUrl());
+    core::SystemInfoProvider::markLaunchReady();
 
     m_workerThread = std::thread([this]() {
         m_server->listen_after_bind();

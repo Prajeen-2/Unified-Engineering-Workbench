@@ -33,6 +33,8 @@ set(CORE_SOURCES
     src/geometry/StlParser.cpp
     src/geometry/CsvParser.cpp
     src/thermal/ThermalSolver1D.cpp
+    src/performance/ThreadPool.cpp
+    src/performance/PerformanceBenchmark.cpp
 )
 
 # Main server executable
@@ -90,4 +92,12 @@ add_executable(test_thermal
     src/thermal/ThermalSolver1D.cpp
 )
 add_test(NAME ThermalFEMTests COMMAND test_thermal)
+
+add_executable(test_performance
+    tests/test_performance.cpp
+    src/performance/ThreadPool.cpp
+    src/performance/PerformanceBenchmark.cpp
+    src/thermal/ThermalSolver1D.cpp
+)
+add_test(NAME PerformanceBenchmarkTests COMMAND test_performance)
 

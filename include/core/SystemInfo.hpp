@@ -14,9 +14,11 @@ struct SystemTelemetry {
     uint64_t availableRamBytes{0};
     std::string osName;
     std::string compiler;
+    std::string compilerFlags;
     std::string buildType;
     std::string architecture;
     uint64_t uptimeSeconds{0};
+    double launchToReadyMs{0.0};
 
     nlohmann::json toJson() const;
 };
@@ -24,6 +26,8 @@ struct SystemTelemetry {
 class SystemInfoProvider {
 public:
     static SystemTelemetry getTelemetry();
+    static void markLaunchReady();
+    static double getLaunchToReadyMs();
     static std::string getExecutableDir();
     static std::string resolveFrontendPath();
     static std::string resolvePath(const std::string& relativePath);
@@ -34,4 +38,3 @@ private:
 };
 
 } // namespace workbench::core
-

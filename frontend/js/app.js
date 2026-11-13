@@ -43,6 +43,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (targetModule === 'geometry' && window.geometryViewer) {
             window.geometryViewer.onWindowResize();
         }
+        if (targetModule === 'thermal' && window.thermalAnalysis) {
+            window.thermalAnalysis.resizeCharts();
+        }
+        if (targetModule === 'performance' && window.performanceLab) {
+            window.performanceLab.resizeCharts();
+        }
     };
 
     navItems.forEach(item => {

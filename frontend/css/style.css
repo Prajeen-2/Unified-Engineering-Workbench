@@ -828,3 +828,68 @@ body {
     max-height: 280px;
     overflow-y: auto;
 }
+
+.chart-container-3col {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+@media (max-width: 1200px) {
+    .chart-container-3col {
+        grid-template-columns: 1fr;
+    }
+}
+
+.badge-pass {
+    background-color: rgba(46, 160, 67, 0.2);
+    color: #3fb950;
+    border: 1px solid rgba(46, 160, 67, 0.4);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 11px;
+    font-family: var(--font-mono);
+}
+
+.badge-fail {
+    background-color: rgba(248, 81, 73, 0.2);
+    color: #f85149;
+    border: 1px solid rgba(248, 81, 73, 0.4);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 11px;
+    font-family: var(--font-mono);
+}
+
+.hw-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.hw-stat-item {
+    background-color: #0d121c;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.hw-stat-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.hw-stat-val {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+}

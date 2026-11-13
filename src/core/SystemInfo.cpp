@@ -3,6 +3,7 @@
 #include <thread>
 #include <filesystem>
 #include <sstream>
+#include <atomic>
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
@@ -14,6 +15,24 @@ namespace workbench::core {
 
 namespace {
     static const auto s_startTime = std::chrono::steady_clock::now();
+    static std::atomic<double> s_launchToReadyMs{-1.0};
+}
+
+void SystemInfoProvider::markLaunchReady() {
+    if (s_launchToReadyMs.load() < 0.0) {
+        auto now = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(now - s_startTime).count();
+        s_launchToReadyMs.store(ms);
+    }
+}
+
+double SystemInfoProvider::getLaunchToReadyMs() {
+    double val = s_launchToReadyMs.load();
+    if (val < 0.0) {
+        auto now = std::chrono::steady_clock::now();
+        return std::chrono::duration<double, std::milli>(now - s_startTime).count();
+    }
+    return val;
 }
 
 nlohmann::json SystemTelemetry::toJson() const {
@@ -30,9 +49,11 @@ nlohmann::json SystemTelemetry::toJson() const {
         {"available_ram_gb", std::round(availRamGB * 100.0) / 100.0},
         {"os_name", osName},
         {"compiler", compiler},
+        {"compiler_flags", compilerFlags},
         {"build_type", buildType},
         {"architecture", architecture},
-        {"uptime_seconds", uptimeSeconds}
+        {"uptime_seconds", uptimeSeconds},
+        {"launch_to_ready_ms", std::round(launchToReadyMs * 100.0) / 100.0}
     };
 }
 
@@ -105,12 +126,28 @@ SystemTelemetry SystemInfoProvider::getTelemetry() {
     std::ostringstream ssComp;
     ssComp << "MSVC " << _MSC_VER << " (Visual Studio 2026)";
     t.compiler = ssComp.str();
+#if defined(NDEBUG)
+    t.compilerFlags = "/W4 /EHsc /utf-8 /permissive- /O2 /Oi /Ot /Gy /MD";
+#else
+    t.compilerFlags = "/W4 /EHsc /utf-8 /permissive- /Od /RTC1 /MDd";
+#endif
 #elif defined(__clang__)
     t.compiler = std::string("Clang ") + __clang_version__;
+#if defined(NDEBUG)
+    t.compilerFlags = "-O3 -march=native -Wall -Wextra -pedantic";
+#else
+    t.compilerFlags = "-O0 -g -Wall -Wextra -pedantic";
+#endif
 #elif defined(__GNUC__)
     t.compiler = std::string("GCC ") + __VERSION__;
+#if defined(NDEBUG)
+    t.compilerFlags = "-O3 -march=native -Wall -Wextra -pedantic";
+#else
+    t.compilerFlags = "-O0 -g -Wall -Wextra -pedantic";
+#endif
 #else
     t.compiler = "Standard C++17 Compiler";
+    t.compilerFlags = "Default optimization flags";
 #endif
 
 #if defined(NDEBUG)
@@ -123,6 +160,7 @@ SystemTelemetry SystemInfoProvider::getTelemetry() {
 
     auto now = std::chrono::steady_clock::now();
     t.uptimeSeconds = std::chrono::duration_cast<std::chrono::seconds>(now - s_startTime).count();
+    t.launchToReadyMs = getLaunchToReadyMs();
 
     return t;
 }
@@ -164,4 +202,3 @@ std::string SystemInfoProvider::resolveFrontendPath() {
 }
 
 } // namespace workbench::core
-
