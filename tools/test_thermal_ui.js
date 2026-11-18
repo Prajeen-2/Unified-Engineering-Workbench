@@ -123,3 +123,4 @@ async function testThermalUI() {
 }
 
 testThermalUI().catch(console.error);
+
