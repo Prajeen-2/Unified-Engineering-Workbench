@@ -67,6 +67,11 @@ class ReportsExportsController {
         document.getElementById('btn-rep-doc-perf')?.addEventListener('click', () => {
             this.triggerDownload(window.api.getReportDocumentUrl('PERFORMANCE_LAB.md'), 'PERFORMANCE_LAB.md');
         });
+
+        // 9. Engineering Technical Report PDF
+        document.getElementById('btn-rep-doc-pdf')?.addEventListener('click', () => {
+            this.triggerDownload(window.api.getReportDocumentUrl('REPORT.pdf'), 'REPORT.pdf');
+        });
     }
 
     initTabs() {

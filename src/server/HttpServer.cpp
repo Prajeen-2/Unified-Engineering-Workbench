@@ -130,7 +130,7 @@ void HttpServer::setupRoutes() {
         std::ostringstream ss;
         ss << "# ===================================================================\n";
         ss << "# UNIFIED ENGINEERING WORKBENCH - SYSTEM LOG EXPORT\n";
-        ss << "# PASS SCIENCE WORKS R&D Internship 2026-2027\n";
+        ss << "# High-Performance Desktop Engineering Suite\n";
         ss << "# Target OS: Windows 11 x64 | Engine: Pure ISO C++17\n";
         ss << "# ===================================================================\n\n";
         for (const auto& entry : logs) {
@@ -1068,6 +1068,8 @@ void HttpServer::setupRoutes() {
             // Also check root for README.md
             if (filename == "README.md") {
                 docPath = std::filesystem::current_path() / "README.md";
+            } else if (filename == "REPORT.pdf" || filename == "REPORT.md") {
+                docPath = std::filesystem::current_path() / "report" / filename;
             }
         }
 
@@ -1088,17 +1090,21 @@ void HttpServer::setupRoutes() {
 
         std::stringstream buffer;
         buffer << file.rdbuf();
-        res.set_content(buffer.str(), "text/markdown; charset=utf-8");
+        if (filename.size() >= 4 && filename.substr(filename.size() - 4) == ".pdf") {
+            res.set_content(buffer.str(), "application/pdf");
+        } else {
+            res.set_content(buffer.str(), "text/markdown; charset=utf-8");
+        }
         res.set_header("Content-Disposition", "attachment; filename=\"" + filename + "\"");
         // CORS handled by global post-routing handler
     });
 
-    // Unified Engineering Verification Summary Endpoint (Task G)
+    // Unified Engineering Verification Summary Endpoint
     m_server->Get("/api/reports/summary", [](const httplib::Request&, httplib::Response& res) {
         auto telemetry = core::SystemInfoProvider::getTelemetry();
         nlohmann::json summary = {
             {"project_name", "UNIFIED ENGINEERING WORKBENCH"},
-            {"organization", "PASS SCIENCE WORKS R&D Internship 2026-2027"},
+            {"organization", "Unified Engineering Systems"},
             {"version", "1.0.0-RC"},
             {"target_platform", "Windows 11 x64"},
             {"compiler", telemetry.compiler},
@@ -1112,43 +1118,43 @@ void HttpServer::setupRoutes() {
             {"milestones", {
                 {
                     {"id", "task_a"},
-                    {"name", "Task A - Application Architecture & C++ Backend"},
+                    {"name", "Application Architecture & Native Core"},
                     {"status", "VERIFIED"},
                     {"details", "Frontend/backend REST separation, Launch.exe root launcher, multi-port fallback, zero-dependency."}
                 },
                 {
                     {"id", "task_b"},
-                    {"name", "Task B - CAD Geometry & Temperature Cloud Viewer"},
+                    {"name", "CAD Geometry & Temperature Cloud Viewer"},
                     {"status", "VERIFIED"},
                     {"details", "ASCII STL parser (20 facets, 60 coords), ANSYS CSV parser (108 nodes), Z-up Three.js viewport, Turbo scientific colormap."}
                 },
                 {
                     {"id", "task_c"},
-                    {"name", "Task C - 1D Steady-State Thermal FEM Solver"},
+                    {"name", "1D Steady-State Thermal FEM Solver"},
                     {"status", "VERIFIED"},
                     {"details", "Linear 2-node finite elements, Dirichlet boundary conditions, second-order mesh convergence (N=10,20,40,80), analytical verification."}
                 },
                 {
                     {"id", "task_d"},
-                    {"name", "Task D - Multicore Performance & Scalability Lab"},
+                    {"name", "Multicore Performance & Scalability Lab"},
                     {"status", "VERIFIED"},
                     {"details", "Bounded std::thread worker pool, 5 measured repetitions + warm-up, deterministic order, numerical tolerance Delta T <= 1e-8 C."}
                 },
                 {
                     {"id", "task_e"},
-                    {"name", "Task E - Tri-Device Heterogeneous Embedded Integration"},
+                    {"name", "Tri-Device Heterogeneous Embedded Integration"},
                     {"status", "VERIFIED"},
                     {"details", "STM32H753ZI MCU, Artix-7 FPGA, FT2232H JTAG probe mock adapters, recoverable timeout fault & TLR reset, live telemetry strip charts."}
                 },
                 {
                     {"id", "task_f"},
-                    {"name", "Task F - Manual Analytical Backpropagation & Neural Lab"},
+                    {"name", "Manual Analytical Backpropagation & Neural Lab"},
                     {"status", "VERIFIED"},
                     {"details", "Zero autograd, exact manual chain-rule backward pass, central finite-difference check (eps=1e-6, err <= 1e-5), 100-step convergence."}
                 },
                 {
                     {"id", "task_g"},
-                    {"name", "Task G - Reports, Exports & Packaging"},
+                    {"name", "Reports, Exports & System Logging"},
                     {"status", "VERIFIED"},
                     {"details", "Centralized export hub, live C++ log terminal, standalone double-click Launch.exe packaging, full documentation suite."}
                 }

@@ -40,8 +40,8 @@ int main(int argc, char* argv[]) {
 
     auto& logger = workbench::core::Logger::instance();
     logger.info("=======================================================");
-    logger.info("   PASS SCIENCE WORKS - UNIFIED ENGINEERING WORKBENCH   ");
-    logger.info("       R&D Internship 2026-2027 Submission Engine       ");
+    logger.info("           UNIFIED ENGINEERING WORKBENCH               ");
+    logger.info("       High-Performance Desktop Engineering Suite      ");
     logger.info("=======================================================");
 
     int port = 8080;

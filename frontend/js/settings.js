@@ -144,7 +144,7 @@ class SettingsController {
         document.getElementById('set-def-tol').value = '1.0e-5';
 
         this.saveComputePresets();
-        window.showToast('Restored all numerical compute presets to assignment defaults.', 'info');
+        window.showToast('Restored all numerical compute presets to factory defaults.', 'info');
     }
 
     applyViewportPresets() {
