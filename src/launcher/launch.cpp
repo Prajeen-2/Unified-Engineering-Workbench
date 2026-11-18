@@ -67,17 +67,67 @@ static bool IsServerHealthy(int port = 8080) {
     return false;
 }
 
-int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int) {
-    const int targetPort = 8080;
-    const wchar_t* appUrl = L"http://127.0.0.1:8080";
-
-    // 1. If backend server is already running and healthy, open browser and do not spawn duplicate
-    if (IsServerHealthy(targetPort)) {
-        ShellExecuteW(NULL, L"open", appUrl, NULL, NULL, SW_SHOWNORMAL);
-        return 0;
+// Check if a local port is free to bind
+static bool IsPortFree(int port) {
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        return false;
     }
 
-    // 2. Locate workbench_server.exe relative to launcher
+    SOCKET sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (sock == INVALID_SOCKET) {
+        WSACleanup();
+        return false;
+    }
+
+    sockaddr_in addr;
+    ZeroMemory(&addr, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(static_cast<u_short>(port));
+    inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
+
+    int res = bind(sock, reinterpret_cast<sockaddr*>(&addr), sizeof(addr));
+    closesocket(sock);
+    WSACleanup();
+
+    return (res == 0);
+}
+
+int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int) {
+    // 1. If an existing backend server instance is already running on any port in range 8080-8089,
+    // open browser to that active instance rather than spawning duplicate
+    for (int port = 8080; port <= 8089; ++port) {
+        if (IsServerHealthy(port)) {
+            std::wstring activeUrl = L"http://127.0.0.1:" + std::to_wstring(port);
+            ShellExecuteW(NULL, L"open", activeUrl.c_str(), NULL, NULL, SW_SHOWNORMAL);
+            return 0;
+        }
+    }
+
+    // 2. Select first available port in fallback range 8080-8089
+    int selectedPort = 8080;
+    bool foundPort = false;
+    for (int port = 8080; port <= 8089; ++port) {
+        if (IsPortFree(port)) {
+            selectedPort = port;
+            foundPort = true;
+            break;
+        }
+    }
+
+    if (!foundPort) {
+        MessageBoxW(
+            NULL,
+            L"Unable to bind to any local port in the range 8080-8089.\nPlease close other programs utilizing these ports and try again.",
+            L"Unified Engineering Workbench - Port Conflict",
+            MB_ICONERROR | MB_OK
+        );
+        return 4;
+    }
+
+    std::wstring appUrl = L"http://127.0.0.1:" + std::to_wstring(selectedPort);
+
+    // 3. Locate workbench_server.exe relative to launcher
     wchar_t exePathBuffer[MAX_PATH];
     GetModuleFileNameW(NULL, exePathBuffer, MAX_PATH);
     fs::path currentDir = fs::path(exePathBuffer).parent_path();
@@ -107,14 +157,15 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int) {
         return 1;
     }
 
-    // 3. Launch workbench_server.exe hidden (CREATE_NO_WINDOW) with detached process group
+    // 4. Launch workbench_server.exe with explicit port and hidden window
     STARTUPINFOW si;
     PROCESS_INFORMATION pi;
     ZeroMemory(&si, sizeof(si));
     si.cb = sizeof(si);
     ZeroMemory(&pi, sizeof(pi));
 
-    std::wstring cmdLine = L"\"" + targetServerExe.wstring() + L"\" --no-browser";
+    std::wstring cmdLine = L"\"" + targetServerExe.wstring() + L"\" --port " + 
+                           std::to_wstring(selectedPort) + L" --no-browser";
     std::vector<wchar_t> cmdBuffer(cmdLine.begin(), cmdLine.end());
     cmdBuffer.push_back(L'\0');
 
@@ -143,16 +194,15 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int) {
         return 2;
     }
 
-    // 4. Poll /api/health until server responds HTTP 200 (timeout: 10 seconds = 50 * 200ms)
+    // 5. Poll /api/health until server responds HTTP 200 (timeout: 10 seconds = 50 * 200ms)
     bool serverHealthy = false;
     for (int attempt = 0; attempt < 50; ++attempt) {
-        // Check if process unexpectedly exited
         DWORD exitCode = 0;
         if (GetExitCodeProcess(pi.hProcess, &exitCode) && exitCode != STILL_ACTIVE) {
             break;
         }
 
-        if (IsServerHealthy(targetPort)) {
+        if (IsServerHealthy(selectedPort)) {
             serverHealthy = true;
             break;
         }
@@ -161,9 +211,14 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int) {
     }
 
     if (!serverHealthy) {
+        std::wstring timeoutMsg = L"The backend server process was started on port " + 
+                                  std::to_wstring(selectedPort) + 
+                                  L", but did not respond to health checks at http://127.0.0.1:" + 
+                                  std::to_wstring(selectedPort) + 
+                                  L"/api/health within 10 seconds.";
         MessageBoxW(
             NULL,
-            L"The backend server process was started, but did not respond to health checks at http://127.0.0.1:8080/api/health within 10 seconds.",
+            timeoutMsg.c_str(),
             L"Unified Engineering Workbench - Startup Timeout",
             MB_ICONERROR | MB_OK
         );
@@ -172,8 +227,8 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int) {
         return 3;
     }
 
-    // 5. Open user default web browser to the application URL
-    ShellExecuteW(NULL, L"open", appUrl, NULL, NULL, SW_SHOWNORMAL);
+    // 6. Open user default web browser to the application URL
+    ShellExecuteW(NULL, L"open", appUrl.c_str(), NULL, NULL, SW_SHOWNORMAL);
 
     // Leave server running in background and release process handles
     CloseHandle(pi.hThread);

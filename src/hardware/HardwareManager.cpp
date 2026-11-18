@@ -173,11 +173,11 @@ nlohmann::json HardwareManager::getSystemElectricalArchitecture() {
             {"domain_1v0", "1.0V Core Logic Domain (Artix-7 FPGA VCCINT Internal Fabric)"}
         }},
         {"level_shifting", {
-            {"part_number", "Texas Instruments TXB0108PWR 8-Bit Bidirectional Voltage-Level Translator"},
+            {"part_number", "Texas Instruments SN74AXC8T245 8-Bit Dual-Supply Bus Transceiver"},
             {"port_a_voltage", "1.8V (Connected to FPGA Bank 1)"},
             {"port_b_voltage", "3.3V (Connected to MCU Port B SPI & Control Signals)"},
-            {"bandwidth", "Up to 100 Mbps (Push-Pull) / 20 Mbps (Open-Drain)"},
-            {"features", "Automatic Direction Sensing, No Direction Control Signal Required, 15 kV ESD Protection"}
+            {"bandwidth", "Up to 380 Mbps (Push-Pull CMOS Drive)"},
+            {"features", "Direction-Controlled Push-Pull CMOS Buffers, High Drive (12 mA), Eliminates Voltage-Divider Contention with 10k/4.7k Pull-ups"}
         }},
         {"jtag_daisy_chain_ownership", {
             {"master_controller", "FTDI FT2232H MPSSE Engine (Exclusive push-pull owner of TCK, TMS, TDI)"},
@@ -189,17 +189,17 @@ nlohmann::json HardwareManager::getSystemElectricalArchitecture() {
         {"pin_voltage_table", {
             {{"pin", 1}, {"signal", "VBUS_5V0"}, {"source", "USB Connector"}, {"destination", "TPS54302 Input"}, {"voltage", "5.0V"}, {"protocol", "Power"}, {"pull", "None"}, {"ownership", "Host USB Supply"}},
             {{"pin", 2}, {"signal", "VDD_3V3"}, {"source", "TLV73333 LDO"}, {"destination", "MCU, FTDI, FPGA B0"}, {"voltage", "3.3V"}, {"protocol", "Power"}, {"pull", "None"}, {"ownership", "On-board LDO"}},
-            {{"pin", 3}, {"signal", "VCCAUX_1V8"}, {"source", "TLV73318 LDO"}, {"destination", "FPGA VCCAUX, TXB0108 VCCA"}, {"voltage", "1.8V"}, {"protocol", "Power"}, {"pull", "None"}, {"ownership", "On-board LDO"}},
+            {{"pin", 3}, {"signal", "VCCAUX_1V8"}, {"source", "TLV73318 LDO"}, {"destination", "FPGA VCCAUX, Level Shifter VCCA"}, {"voltage", "1.8V"}, {"protocol", "Power"}, {"pull", "None"}, {"ownership", "On-board LDO"}},
             {{"pin", 4}, {"signal", "VCCINT_1V0"}, {"source", "TPS7A8300 LDO"}, {"destination", "FPGA Core VCCINT"}, {"voltage", "1.0V"}, {"protocol", "Power"}, {"pull", "None"}, {"ownership", "On-board LDO"}},
             {{"pin", 5}, {"signal", "JTAG_TCK"}, {"source", "FT2232H (Pin 16)"}, {"destination", "MCU (PA14) & FPGA (C11)"}, {"voltage", "3.3V"}, {"protocol", "JTAG Clock (15 MHz)"}, {"pull", "100k Pull-down"}, {"ownership", "JTAG Adapter (Master)"}},
             {{"pin", 6}, {"signal", "JTAG_TMS"}, {"source", "FT2232H (Pin 17)"}, {"destination", "MCU (PA13) & FPGA (D11)"}, {"voltage", "3.3V"}, {"protocol", "JTAG Mode Select"}, {"pull", "10k Pull-up"}, {"ownership", "JTAG Adapter (Master)"}},
             {{"pin", 7}, {"signal", "JTAG_TDI"}, {"source", "FT2232H (Pin 18)"}, {"destination", "MCU (PA15, TAP#0)"}, {"voltage", "3.3V"}, {"protocol", "JTAG Data In"}, {"pull", "10k Pull-up"}, {"ownership", "JTAG Adapter (Master)"}},
             {{"pin", 8}, {"signal", "MCU_TDO_CHAIN"}, {"source", "MCU (PB3, TAP#0)"}, {"destination", "FPGA (D12, TAP#1 TDI)"}, {"voltage", "3.3V"}, {"protocol", "JTAG Inter-device Chain"}, {"pull", "None"}, {"ownership", "MCU TAP (Slave 0)"}},
             {{"pin", 9}, {"signal", "FPGA_TDO"}, {"source", "FPGA (C12, TAP#1)"}, {"destination", "FT2232H (Pin 19 TDO)"}, {"voltage", "3.3V"}, {"protocol", "JTAG Data Return"}, {"pull", "10k Pull-up"}, {"ownership", "FPGA TAP (Slave 1)"}},
-            {{"pin", 10}, {"signal", "MCU_SPI_MOSI"}, {"source", "MCU (PB5, SPI1)"}, {"destination", "TXB0108 (B1) -> FPGA (A4)"}, {"voltage", "3.3V -> 1.8V"}, {"protocol", "SPI Telemetry Bus (25 MHz)"}, {"pull", "None"}, {"ownership", "MCU (Master)"}},
-            {{"pin", 11}, {"signal", "MCU_SPI_MISO"}, {"source", "FPGA (A5) -> TXB0108"}, {"destination", "MCU (PB4, SPI1)"}, {"voltage", "1.8V -> 3.3V"}, {"protocol", "SPI Telemetry Bus"}, {"pull", "None"}, {"ownership", "FPGA (Slave)"}},
-            {{"pin", 12}, {"signal", "MCU_SPI_SCK"}, {"source", "MCU (PB3, SPI1)"}, {"destination", "TXB0108 (B2) -> FPGA (B4)"}, {"voltage", "3.3V -> 1.8V"}, {"protocol", "SPI Clock"}, {"pull", "100k Pull-down"}, {"ownership", "MCU (Master)"}},
-            {{"pin", 13}, {"signal", "FPGA_IRQ_N"}, {"source", "FPGA (B5) -> TXB0108"}, {"destination", "MCU (PB0, EXTI0)"}, {"voltage", "1.8V -> 3.3V"}, {"protocol", "Active-Low Interrupt"}, {"pull", "4.7k Pull-up"}, {"ownership", "FPGA (Interrupt Source)"}},
+            {{"pin", 10}, {"signal", "MCU_SPI_MOSI"}, {"source", "MCU (PB5, SPI1)"}, {"destination", "SN74AXC8T245 (B1) -> FPGA (A4)"}, {"voltage", "3.3V -> 1.8V"}, {"protocol", "SPI Telemetry Bus (25 MHz)"}, {"pull", "None"}, {"ownership", "MCU (Master)"}},
+            {{"pin", 11}, {"signal", "MCU_SPI_MISO"}, {"source", "FPGA (A5) -> SN74AXC8T245"}, {"destination", "MCU (PB4, SPI1)"}, {"voltage", "1.8V -> 3.3V"}, {"protocol", "SPI Telemetry Bus"}, {"pull", "None"}, {"ownership", "FPGA (Slave)"}},
+            {{"pin", 12}, {"signal", "MCU_SPI_SCK"}, {"source", "MCU (PB3, SPI1)"}, {"destination", "SN74AXC8T245 (B2) -> FPGA (B4)"}, {"voltage", "3.3V -> 1.8V"}, {"protocol", "SPI Clock"}, {"pull", "100k Pull-down"}, {"ownership", "MCU (Master)"}},
+            {{"pin", 13}, {"signal", "FPGA_IRQ_N"}, {"source", "FPGA (B5) -> SN74AXC8T245"}, {"destination", "MCU (PB0, EXTI0)"}, {"voltage", "1.8V -> 3.3V"}, {"protocol", "Active-Low Interrupt"}, {"pull", "4.7k Pull-up"}, {"ownership", "FPGA (Interrupt Source)"}},
             {{"pin", 14}, {"signal", "SYS_RESET_N"}, {"source", "Pushbutton / FTDI"}, {"destination", "MCU NRST & FPGA PROG_B"}, {"voltage", "3.3V"}, {"protocol", "System Hardware Reset"}, {"pull", "10k Pull-up"}, {"ownership", "Shared Open-Drain Bus"}}
         }}
     };

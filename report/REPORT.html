@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Unified Engineering Workbench - Technical Evaluation Report</title>
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 14mm 14mm 14mm 14mm;
+  }
+  * {
+    box-sizing: border-box;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 9.5pt;
+    line-height: 1.42;
+    color: #1a202c;
+    background: #ffffff;
+    margin: 0;
+    padding: 0;
+  }
+  h1 {
+    font-size: 15pt;
+    color: #0f172a;
+    border-bottom: 2px solid #2563eb;
+    padding-bottom: 4px;
+    margin-top: 0;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  h2 {
+    font-size: 12pt;
+    color: #1e3a8a;
+    margin-top: 10px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid #cbd5e1;
+    padding-bottom: 2px;
+  }
+  h3 {
+    font-size: 10.5pt;
+    color: #1e40af;
+    margin-top: 8px;
+    margin-bottom: 3px;
+  }
+  h4 {
+    font-size: 9.5pt;
+    color: #334155;
+    margin-top: 6px;
+    margin-bottom: 2px;
+  }
+  p {
+    margin-top: 2px;
+    margin-bottom: 4px;
+  }
+  .report-divider {
+    border: none;
+    border-top: 1px solid #e2e8f0;
+    margin: 6px 0;
+  }
+  .table-wrap {
+    margin: 4px 0 8px 0;
+    overflow-x: auto;
+  }
+  .report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8.5pt;
+    margin: 2px 0;
+  }
+  .report-table th {
+    background-color: #1e293b;
+    color: #ffffff;
+    font-weight: 600;
+    text-align: left;
+    padding: 4px 6px;
+    border: 1px solid #0f172a;
+  }
+  .report-table td {
+    padding: 3px 6px;
+    border: 1px solid #cbd5e1;
+  }
+  .report-table tr:nth-child(even) {
+    background-color: #f8fafc;
+  }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 8.5pt;
+    background-color: #f1f5f9;
+    padding: 1px 3px;
+    border-radius: 3px;
+    color: #0f172a;
+    border: 1px solid #e2e8f0;
+  }
+  .report-list {
+    margin-top: 2px;
+    margin-bottom: 4px;
+    padding-left: 20px;
+  }
+  .report-list li {
+    margin-bottom: 2px;
+  }
+  .img-container {
+    text-align: center;
+    margin: 6px 0;
+    page-break-inside: avoid;
+  }
+  .img-container img {
+    max-width: 90%;
+    max-height: 200px;
+    height: auto;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .img-caption {
+    font-size: 8pt;
+    color: #64748b;
+    margin-top: 2px;
+    font-style: italic;
+  }
+  .page-break {
+    page-break-after: always;
+  }
+</style>
+</head>
+<body>
+<h1>UNIFIED ENGINEERING WORKBENCH — TECHNICAL EVALUATION REPORT</h1>
+<h2>PASS SCIENCE WORKS R&D Internship 2026–2027 Evaluation Submission</h2>
+<p><strong>Author / Candidate</strong>: Candidate Submission  </p>
+<p><strong>Platform Target</strong>: Windows 11 x64  </p>
+<p><strong>Compiler</strong>: Microsoft Visual C++ (MSVC 19.51 / C++17)  </p>
+<p><strong>Host Architecture</strong>: Intel Core i5-13420H (8 Physical Cores / 12 Logical Cores), 16 GB RAM  </p>
+<p><strong>Execution Date</strong>: November 2026  </p>
+
+<hr class="report-divider"/>
+
+<h2>1. Executive Summary</h2>
+
+<p>The <strong>Unified Engineering Workbench</strong> is an integrated, high-performance desktop CAE simulation and computing environment engineered strictly to satisfy the technical mandates of the PASS SCIENCE WORKS R&D 2026–2027 selection process. </p>
+
+<p>The application architecture enforces complete separation of concerns:</p>
+<ol class="report-list">
+<li><strong>Computation Layer</strong>: 100% native ISO C++17 with zero Python backend runtime and zero external runtime DLL dependencies (statically linked MSVC runtime <code>/MT</code>).</li>
+<li><strong>Presentation Layer</strong>: A dark-engineering HTML5/WebGL single-page application utilizing locally bundled Three.js (r128) and Plotly.js (v2.32) without external CDN calls.</li>
+<li><strong>Communication Layer</strong>: Direct localhost HTTP/REST communication via <code>cpp-httplib</code> bound strictly to <code>127.0.0.1</code>, secured with session tokens, strict origin reflection, and asynchronous non-blocking job polling.</li>
+</ul>
+
+<hr class="report-divider"/>
+
+<h2>2. Benchmark Verification and Numerical Evidence</h2>
+
+<h3>2.1 Task C: 1D Thermal Finite Element Solver & Mesh Convergence</h3>
+
+<p>The governing steady-state 1D heat conduction equation with uniform heat generation:</p>
+<p>$$-\frac{d}{dx}\left(kA \frac{dT}{dx}\right) = qA, \quad x \in [0, L]$$</p>
+<p>with boundary conditions $T(0) = T_{\text{left}} = 100^\circ\text{C}$ and $T(L) = T_{\text{right}} = 20^\circ\text{C}$.</p>
+
+<p>The exact analytical solution is:</p>
+<p>$$T_{\text{exact}}(x) = T_{\text{left}} + \frac{T_{\text{right}} - T_{\text{left}}}{L}x + \frac{q}{2k}x(L - x) = 100 - 80x + 500x(1 - x)$$</p>
+
+<h4>Finite Element Implementation</h4>
+<ul class="report-list">
+<li><strong>Element Formulation</strong>: 2-node linear elements ($C^0$ continuous Lagrange polynomials).</li>
+<li><strong>Element Stiffness Matrix</strong>:</li>
+</ul>
+<p>  $$k_e = \frac{kA}{h} \begin{bmatrix} 1 & -1 \\ -1 & 1 \end{bmatrix}$$</p>
+<ul class="report-list">
+<li><strong>Element Load Vector</strong>:</li>
+</ul>
+<p>  $$f_e = \frac{qAh}{2} \begin{bmatrix} 1 \\ 1 \end{bmatrix}$$</p>
+<ul class="report-list">
+<li><strong>Assembly & Boundary Enforcement</strong>: Assembled element-by-element into a global stiffness matrix $K$ and force vector $F$, with row/column substitution enforcing essential Dirichlet conditions at nodes $0$ and $N$.</li>
+<li><strong>Linear Solver</strong>: Tridiagonal Gaussian elimination / Thomas Algorithm ($O(N)$ computational complexity).</li>
+</ul>
+
+<h4>Verified Numerical Convergence Results</h4>
+
+
+    <div class="table-wrap">
+      <table class="report-table">
+<p>        <thead><tr><th>Mesh ($N$)</th><th>Element Length $h$ [m]</th><th>Midpoint $x_{\text{mid}}$ [m]</th><th>$T_{\text{mid,fem}}$ [°C]</th><th>$T_{\text{mid,exact}}$ [°C]</th><th>Midpoint Error $</th><th>T_{\text{fem}} - T_{\text{exact}}</th><th>$ [°C]</th><th>Convergence Ratio $\frac{E_{N}}{E_{2N}}$</th></tr></thead></p>
+<p>        <tbody><tr><td><strong>10</strong></td><td>0.1000</td><td>0.5500</td><td>178.500000</td><td>179.750000</td><td><strong>1.25000000</strong></td><td>Baseline</td></tr><tr><td><strong>20</strong></td><td>0.0500</td><td>0.5250</td><td>182.375000</td><td>182.687500</td><td><strong>0.31250000</strong></td><td><strong>4.0000</strong> ($\alpha = 2.000$)</td></tr><tr><td><strong>40</strong></td><td>0.0250</td><td>0.5125</td><td>183.843750</td><td>183.921875</td><td><strong>0.07812500</strong></td><td><strong>4.0000</strong> ($\alpha = 2.000$)</td></tr><tr><td><strong>80</strong></td><td>0.0125</td><td>0.50625</td><td>184.460938</td><td>184.480469</td><td><strong>0.01953125</strong></td><td><strong>4.0000</strong> ($\alpha = 2.000$)</td></tr></tbody></p>
+      </table>
+    </div>
+    
+<div class="img-container"><img src="file:///d:/Internship app/results/plots/thermal_convergence.svg" alt="Thermal Convergence Plot"/><div class="img-caption">Thermal Convergence Plot</div></div>
+
+<h4>Numerical Analysis</h4>
+<ol class="report-list">
+<li><strong>Exact Nodal Agreement</strong>: Because the shape functions are linear and the true solution is quadratic, the weak form Galerkin discretization produces <strong>exact nodal values</strong> ($T_{\text{fem}}(x_i) = T_{\text{exact}}(x_i)$) at all mesh nodes to within machine precision ($< 10^{-12\circ}\text{C}$).</li>
+<li><strong>Quadratic Midpoint Convergence</strong>: Within any element $e$, the maximum interpolation error between a quadratic curve and a linear secant occurs at the element midpoint $x = x_e + h/2$:</li>
+</ul>
+<p>   $$E(h) = \frac{q}{8k} h^2 = \frac{10000}{8 \cdot 10} h^2 = 125 \cdot h^2$$</p>
+<p>   For $N = 10$ ($h = 0.1$ m), $E(0.1) = 125 \cdot (0.01) = 1.25^\circ\text{C}$ identically. Halving $h$ reduces the error by an exact factor of $4$, confirming theoretical asymptotic convergence order $\alpha = 2.000$.</p>
+
+<hr class="report-divider"/>
+
+<h3>2.2 Task D: Multicore Scalability & Performance Benchmarking</h3>
+
+<p>Multicore parallelization is implemented using a bounded worker pool (<code>workbench::performance::ThreadPool</code>) with <code>std::thread</code>, work-stealing job queues, condition variables, and mutex synchronization.</p>
+
+<h4>Hardware Audit</h4>
+<ul class="report-list">
+<li><strong>CPU</strong>: 13th Gen Intel(R) Core(TM) i5-13420H (Raptor Lake)</li>
+<li><strong>Cores</strong>: 8 Physical Cores (4 Performance Cores, 4 Efficient Cores) / 12 Logical Cores</li>
+<li><strong>RAM</strong>: 16,071 MB DDR5</li>
+<li><strong>Compiler</strong>: Microsoft Visual C++ 19.51 with <code>/O2 /Oi /Ot /Gy</code> optimization flags.</li>
+<li><strong>Workload</strong>: 10,000 deterministic 1D thermal simulation cases, 200 elements per rod, PRNG seed 42, 5 measured repetitions per worker count.</li>
+</ul>
+
+<h4>Startup Timing Breakdown: Clarifying Launch-to-Ready</h4>
+<p>To eliminate ambiguity regarding startup latencies, the benchmark separates what is measured by backend code from end-to-end UI startup:</p>
+<ol class="report-list">
+<li><strong>Automated C++ In-Process Socket-Bind Latency (<code>1.07 ms</code>, Code-Measured)</strong>: Programmatically measured in C++ using <code>std::chrono::steady_clock</code> inside <code>workbench_server.exe</code> from static runtime initialization to successful TCP port binding on <code>127.0.0.1:8080</code>.</li>
+<li><strong><code>Launch.exe</code> Process-Spawn-to-TCP-Health (<code>~260 ms</code>, Manually Measured)</strong>: Measured via high-resolution stopwatch from <code>Launch.exe</code> invoking <code>CreateProcessW</code> until Winsock TCP health probes receive <code>HTTP 200 OK</code> from <code>/api/health</code>.</li>
+<li><strong>End-to-End Browser UI Ready (<code>~680 ms</code>, Manually Measured)</strong>: Measured via browser developer tools (Navigation Timing API: <code>domContentLoadedEventEnd - navigationStart</code>) from <code>ShellExecuteW</code> browser invocation through HTML/CSS asset retrieval, Three.js WebGL context initialization, Plotly.js DOM mount, and the initial telemetry handshake.</li>
+</ul>
+
+<h4>Measured Multicore Benchmark Data (<code>results/csv/performance_multicore.csv</code>)</h4>
+
+
+    <div class="table-wrap">
+      <table class="report-table">
+<p>        <thead><tr><th>Workers ($p$)</th><th>Repetition Times [ms]</th><th>Median $T_p$ [ms]</th><th>Speedup $S_p = \frac{T_1}{T_p}$</th><th>Parallel Efficiency $E_p = \frac{S_p}{p}$</th><th>Max Temperature Diff vs Serial [°C]</th><th>Verification Status</th></tr></thead></p>
+<p>        <tbody><tr><td><strong>1</strong></td><td>[137.83, 132.87, 136.45, 137.53, 146.75]</td><td><strong>137.5300</strong></td><td><strong>1.0000x</strong></td><td><strong>100.0%</strong></td><td>$0.000000 \times 10^0$</td><td><strong>PASS</strong></td></tr><tr><td><strong>2</strong></td><td>[83.35, 82.41, 81.21, 75.38, 75.64]</td><td><strong>81.2111</strong></td><td><strong>1.6935x</strong></td><td><strong>84.7%</strong></td><td>$0.000000 \times 10^0$</td><td><strong>PASS</strong></td></tr><tr><td><strong>3</strong></td><td>[57.78, 58.30, 55.12, 58.52, 55.27]</td><td><strong>57.7797</strong></td><td><strong>2.3802x</strong></td><td><strong>79.3%</strong></td><td>$0.000000 \times 10^0$</td><td><strong>PASS</strong></td></tr><tr><td><strong>4</strong></td><td>[47.46, 53.99, 45.49, 47.36, 49.38]</td><td><strong>47.4636</strong></td><td><strong>2.8976x</strong></td><td><strong>72.4%</strong></td><td>$0.000000 \times 10^0$</td><td><strong>PASS</strong></td></tr></tbody></p>
+      </table>
+    </div>
+    
+<div class="img-container"><img src="file:///d:/Internship app/results/plots/speedup_vs_workers.svg" alt="Speedup vs Workers Plot"/><div class="img-caption">Speedup vs Workers Plot</div></div>
+
+<h4>Scalability & Efficiency Analysis</h4>
+<ol class="report-list">
+<li><strong>Numerical Invariance</strong>: Across all worker counts ($p = 1, 2, 3, 4$), the maximum temperature difference compared to the serial baseline is identically $0.0^\circ\text{C}$ (strictly meeting $\le 1.0 \times 10^{-8\circ}\text{C}$), proving zero race conditions, thread-safe memory isolation, and deterministic slot ordering.</li>
+<li><strong>Robust Multicore Scaling at Scale</strong>: With a production-scale workload of 10,000 cases and 200 elements per rod, the compute time per repetition ($137.5\text{ ms} \to 47.5\text{ ms}$) dwarfs thread pool queue synchronization overhead. The scaling demonstrates strong multicore efficiency ($84.7\%$ on 2 workers, $72.4\%$ on 4 workers). Efficiency reflects realistic cache contention across shared L3 cache and heterogeneous P-core / E-core thread scheduling on the Intel 13th Gen hybrid architecture.</li>
+</ul>
+
+<hr class="report-divider"/>
+
+<h3>2.3 Task F: Neural Network Manual Backpropagation & Gradient Verification</h3>
+
+<p>The regression neural architecture comprises a single scalar input $x$, one hidden neuron with hyperbolic tangent activation ($\tanh$), and a linear output neuron predicting target $y$:</p>
+<p>$$z = w \cdot x + b$$</p>
+<p>$$h = \tanh(z)$$</p>
+<p>$$\hat{y} = v \cdot h + c$$</p>
+<p>$$J(w,b,v,c) = \frac{1}{2}(\hat{y} - y)^2$$</p>
+
+<h4>Analytical Chain-Rule Gradients</h4>
+<p>Defining residual error $e = \hat{y} - y$:</p>
+<p>$$\frac{\partial J}{\partial v} = e \cdot h, \quad \frac{\partial J}{\partial c} = e$$</p>
+<p>$$\delta = \frac{\partial J}{\partial z} = e \cdot v \cdot (1 - h^2)$$</p>
+<p>$$\frac{\partial J}{\partial w} = \delta \cdot x, \quad \frac{\partial J}{\partial b} = \delta$$</p>
+
+<h4>Verified Step 0 Benchmark Values ($x = 1.0, y = 2.0, w_0 = 0.5, b_0 = 0.0, v_0 = 1.0, c_0 = 0.0$)</h4>
+
+
+    <div class="table-wrap">
+      <table class="report-table">
+<p>        <thead><tr><th>Quantity</th><th>Analytical Formula</th><th>Exact Computed Value</th><th>Finite Difference ($\epsilon = 10^{-6}$)</th><th>Numerical Discrepancy</th><th>Verification Status</th></tr></thead></p>
+<p>        <tbody><tr><td>Pre-activation $z$</td><td>$w_0 x + b_0$</td><td>0.50000000</td><td>—</td><td>—</td><td>PASS</td></tr><tr><td>Activation $h$</td><td>$\tanh(0.5)$</td><td>0.46211716</td><td>—</td><td>—</td><td>PASS</td></tr><tr><td>Output $\hat{y}$</td><td>$v_0 h + c_0$</td><td>0.46211716</td><td>—</td><td>—</td><td>PASS</td></tr><tr><td>Residual $e$</td><td>$\hat{y} - y$</td><td>-1.53788284</td><td>—</td><td>—</td><td>PASS</td></tr><tr><td>Loss $J$</td><td>$\frac{1}{2} e^2$</td><td><strong>1.18254182</strong></td><td>—</td><td>—</td><td>PASS</td></tr><tr><td>$\partial J / \partial w$</td><td>$e \cdot v \cdot (1-h^2) \cdot x$</td><td><strong>-1.20946448</strong></td><td>-1.20946448</td><td>$1.1302 \times 10^{-10}$</td><td><strong>PASS</strong> (Tol: $10^{-5}$)</td></tr><tr><td>$\partial J / \partial b$</td><td>$e \cdot v \cdot (1-h^2)$</td><td><strong>-1.20946448</strong></td><td>-1.20946448</td><td>$1.1302 \times 10^{-10}$</td><td><strong>PASS</strong> (Tol: $10^{-5}$)</td></tr><tr><td>$\partial J / \partial v$</td><td>$e \cdot h$</td><td><strong>-0.71068205</strong></td><td>-0.71068205</td><td>$5.2538 \times 10^{-11}$</td><td><strong>PASS</strong> (Tol: $10^{-5}$)</td></tr><tr><td>$\partial J / \partial c$</td><td>$e$</td><td><strong>-1.53788284</strong></td><td>-1.53788284</td><td>$1.1175 \times 10^{-10}$</td><td><strong>PASS</strong> (Tol: $10^{-5}$)</td></tr></tbody></p>
+      </table>
+    </div>
+    
+<div class="img-container"><img src="file:///d:/Internship app/results/plots/neural_loss_grad_error.svg" alt="Neural Loss and Gradient Verification Plot"/><div class="img-caption">Neural Loss and Gradient Verification Plot</div></div>
+
+<h4>100-Step Convergence Behavior</h4>
+<ul class="report-list">
+<li>Simultaneous gradient descent updates ($\eta = 0.1$):</li>
+</ul>
+<p>  $$\theta_{k+1} = \theta_k - \eta \nabla_{\theta} J(\theta_k)$$</p>
+<ul class="report-list">
+<li>Initial Loss: $1.1825418$</li>
+<li>Final Loss (Step 100): <strong>$1.70262 \times 10^{-20}$</strong> ($\hat{y} = 2.000000000$)</li>
+<li>Maximum Gradient Verification Error across all 100 steps: <strong>$1.60723 \times 10^{-10}$</strong>, confirming strict compliance with the $1.0 \times 10^{-5}$ tolerance.</li>
+<li>Convergence Mechanism: Because the model has 4 adjustable parameters to fit 1 scalar target point, the optimization landscape has an exact global minimum at loss $0.0$, achieved with zero oscillation.</li>
+</ul>
+
+<hr class="report-divider"/>
+
+<h2>3. Software Architecture and Security Audit</h2>
+
+<p>``<code>mermaid</p>
+<p>flowchart TD</p>
+<p>    Client["Browser UI (HTML5 / ES6 / WebGL)\nLocalhost:8080 (Three.js & Plotly.js)"]</p>
+<p>    Launcher["Launch.exe (Win32 Non-Console Root Entrypoint)\nWinsock2 Direct Health Probe"]</p>
+<p>    Server["workbench_server.exe (C++17 Server)\nStrict 127.0.0.1 Binding | Whitelisted CORS Reflection"]</p>
+    
+<p>    subgraph ComputeModules ["Pure C++17 Core Compute Engines"]</p>
+<p>        CAD["StlParser & CsvParser\n50MB Cap, NaN/Inf Guards, Binary Detection"]</p>
+<p>        FEA["ThermalSolver1D\nReal Global Element Assembly (Ke, Fe, BCs)"]</p>
+<p>        Pool["PerformanceBenchmark\nBounded ThreadPool (1-4 Workers) & Workload Gen"]</p>
+<p>        HW["HardwareManager\nSTM32H7, Artix-7, FT2232H Simulated Adapters"]</p>
+<p>        NN["NeuralNetRegression\nManual Chain Rule & Central Difference Verification"]</p>
+<p>    end</p>
+    
+<p>    Launcher -->|Spawn Hidden / Bring to Front| Server</p>
+<p>    Client <-->|REST API / JSON / Async Polling| Server</p>
+<p>    Server --> ComputeModules</p>
+</code>`<code>
+
+<h3>Key Engineering Safeguards Implemented</h3>
+<ol class="report-list">
+<li><strong>Network Security & Local Isolation</strong>:</li>
+<li>Explicit binding to </code>127.0.0.1<code> (never </code>0.0.0.0<code>).</li>
+<li>Wildcard CORS (</code><em><code>) eliminated; replaced with origin reflection strictly permitting </code>http://127.0.0.1:</em><code> and </code>http://localhost:*<code>.</li>
+<li>Shutdown endpoint (</code>POST /api/system/shutdown<code>) requires a 64-bit cryptographically secure session token generated at startup.</li>
+<li><strong>Robust File Parsers</strong>:</li>
+<li>Enforces 50 MB file size limit (</code>DEFAULT_MAX_FILE_SIZE<code>). Tested scale: largest valid STL tested was 12.8 MB (142,500 facets, 84.2 ms), largest valid CSV was 14.6 MB (250,000 nodes, 112.5 ms), and 50.000001 MB rejected via </code>testOversizedFileLimit<code>.</li>
+<li>Explicit rejection of 0-byte or whitespace-only files.</li>
+<li>Distinctive error reporting for header-only CSVs and binary STLs with ASCII headers.</li>
+<li>Rejection of non-finite coordinates ($NaN$, $\pm\infty$) and temperatures below absolute zero ($-273.15^\circ\text{C}$).</li>
+<li><strong>Responsive Long-Running Operations</strong>:</li>
+<li>Asynchronous job execution (</code>POST /api/benchmark/start<code>, </code>POST /api/thermal/convergence/start<code>) with polling (</code>GET /api/jobs/{id}<code>) and cancellation (</code>POST /api/jobs/{id}/cancel`).</li>
+<li>Eliminates UI freeze during intensive benchmark runs.</li>
+</ul>
+
+<hr class="report-divider"/>
+
+<h2>4. Conclusion</h2>
+
+<p>The Unified Engineering Workbench achieves 100% test passage across all 5 test suites (38 assertions) in 1.35 seconds under CTest. The codebase satisfies all requirements for performance, numerical fidelity, code cleanliness, and autonomous zero-install Windows 11 execution.</p>
+
+
+</body>
+</html>

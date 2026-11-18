@@ -27,7 +27,7 @@ flowchart TD
     subgraph EmbeddedSubsystem["Heterogeneous Embedded Target Subsystem"]
         MCU["STM32H753ZI Microcontroller<br/>ARM Cortex-M7 @ 480 MHz<br/>3.3V VDD Domain<br/>TAP#0 IDCODE: 0x6BA02477"]
         
-        LS["TI TXB0108PWR<br/>8-Bit Level Translator<br/>3.3V (Port B) &harr; 1.8V (Port A)"]
+        LS["TI SN74AXC8T245<br/>8-Bit Level Transceiver<br/>3.3V (Port B) &harr; 1.8V (Port A)"]
         
         FPGA["Xilinx Artix-7 XC7A100T FPGA<br/>Fabric @ 100 MHz<br/>1.0V VCCINT / 1.8V VCCAUX / 3.3V VCCO<br/>TAP#1 IDCODE: 0x0362D093"]
     end
@@ -110,14 +110,22 @@ To prevent digital switching noise and buck regulator ground bounce from contami
 
 ## 4. Voltage Domain Translation & Level Shifting
 
-Because the STM32H7 operates in a $3.3\text{V}$ I/O domain while the Artix-7 high-speed Bank 1 is constrained to $1.8\text{V}$ (for low-power high-speed I/O standards), direct galvanic connection would cause latch-up and forward-bias internal clamping diodes.
+### 4.1 Domain Interface Challenge & Component Selection
+The STM32H7 operates in a $3.3\text{V}$ I/O domain, whereas Artix-7 Bank 1 is powered from $1.8\text{V}$ (low-voltage CMOS standard). Direct connection would forward-bias the FPGA's internal ESD clamping diodes, causing latch-up or permanent damage.
 
-The testbed integrates a **Texas Instruments TXB0108PWR** 8-bit bidirectional voltage-level translator:
-- **Port A (1.8V Domain):** Connected directly to Artix-7 Bank 1 I/O pins (pins `A4`, `A5`, `B4`, `B5`).
-- **Port B (3.3V Domain):** Connected directly to STM32H7 Port B GPIOs (`PB3`, `PB4`, `PB5`, `PB0`).
-- **Automatic Direction Sensing:** Utilizes weak internal buffers ($4\text{ k}\Omega$) with dynamic one-shot edge-rate accelerators ($30\text{ ns}$ overdrive pulses) to detect whether the MCU or FPGA is driving the bus without requiring an external direction control pin.
-- **Operating Speed:** Up to $100\text{ Mbps}$ on push-pull lines (`SPI_SCK`, `MOSI`, `MISO`) and $20\text{ Mbps}$ on open-drain interrupt lines (`FPGA_IRQ_N`).
-- **ESD Protection:** Exceeds $\pm 15\text{ kV}$ Human Body Model (HBM) on both ports.
+The workbench integrates a **Texas Instruments SN74AXC8T245** 8-bit dual-supply bus transceiver:
+- **Port A ($1.8\text{V}$ Domain):** Connected directly to Artix-7 Bank 1 I/O pins (`A4`, `A5`, `B4`, `B5`).
+- **Port B ($3.3\text{V}$ Domain):** Connected directly to STM32H7 Port B GPIOs (`PB3`, `PB4`, `PB5`, `PB0`).
+- **True Push-Pull CMOS Output Stages:** Provides up to $\pm 12\text{ mA}$ continuous drive capability with low internal output impedance ($R_{\text{ON}} < 25\ \Omega$).
+- **High-Speed Throughput:** Supports up to $380\text{ Mbps}$ with propagation delay $t_{\text{pd}} < 3.2\text{ ns}$, preserving $25\text{ MHz}$ SPI clock and $15\text{ MHz}$ JTAG fidelity.
+- **Direction Control:** Controlled via static direction pin (`DIR`), dedicating channels to fixed unidirectional signal flow.
+
+### 4.2 Engineering Justification: Eliminating the TXB0108 + 10 kΩ Pull-up Failure Mode
+Auto-direction translators like the **TI TXB0108** are strictly avoided on pull-up lines based on Texas Instruments Application Report **SCEB011 / SCEA044** (*"Effects of External Pullup and Pulldown Resistors on TXB Devices"*):
+1. **The Voltage Divider Conflict:** TXB0108 utilizes weak internal buffers ($40\text{ k}\Omega \text{ to } 70\text{ k}\Omega$) combined with short $30\text{ ns}$ one-shot edge accelerators. When external $10\text{ k}\Omega$ or $4.7\text{ k}\Omega$ pull-ups are present (such as the standard IEEE 1149.1 pull-ups on `TMS`, `TDI`, and open-drain lines), an inadvertent voltage divider is established between the external pull-up and the internal weak driver:
+   $$V_{\text{OL}} \approx V_{\text{CC}} \cdot \frac{R_{\text{internal}}}{R_{\text{internal}} + R_{\text{pullup}}} \approx 1.8\text{V} \cdot \frac{4\text{ k}\Omega}{4\text{ k}\Omega + 10\text{ k}\Omega} \approx 0.51\text{V}$$
+2. **Threshold Violation:** This elevated $V_{\text{OL}}$ dangerously approaches or exceeds the maximum input low voltage ($V_{\text{IL}} \le 0.35 \times V_{\text{CCA}} \approx 0.63\text{V}$), producing marginal logic levels, false edge triggers, oscillation, and bus contention.
+3. **Deterministic Push-Pull Solution:** By deploying the **SN74AXC8T245** (or dedicated **SN74LVC1T45** / **SN74AVC4T774** buffers), output drive is governed by standard low-impedance CMOS transistors. It pulls the line down cleanly to $V_{\text{OL}} < 0.1\text{V}$ against $10\text{ k}\Omega$ or $4.7\text{ k}\Omega$ pull-ups without contention, ensuring glitch-free high-speed operation. For open-drain interrupt lines (`FPGA_IRQ_N`), a **TXS0108E** (specifically designed with internal pull-up integration) or direction-gated open-drain buffer is utilized.
 
 ---
 
@@ -162,17 +170,17 @@ The boundary-scan architecture follows IEEE Standard 1149.1:
 | :---: | :--- | :--- | :--- | :---: | :--- | :---: | :--- |
 | **1** | `VBUS_5V0` | USB Type-C Header | TPS54302 Buck Input | 5.0V | DC Primary Power | None | Host USB 5V Supply |
 | **2** | `VDD_3V3` | TI TLV73333 LDO | MCU, FTDI, FPGA Bank 0 | 3.3V | Regulated Digital VDD | None | On-board 3.3V LDO |
-| **3** | `VCCAUX_1V8` | TI TLV73318 LDO | FPGA VCCAUX, TXB0108 VCCA | 1.8V | Regulated Auxiliary Rail | None | On-board 1.8V LDO |
+| **3** | `VCCAUX_1V8` | TI TLV73318 LDO | FPGA VCCAUX, Level Shifter VCCA | 1.8V | Regulated Auxiliary Rail | None | On-board 1.8V LDO |
 | **4** | `VCCINT_1V0` | TI TPS7A8300 LDO | Artix-7 Core Fabric | 1.0V | Regulated Core Rail | None | On-board 1.0V LDO |
 | **5** | `JTAG_TCK` | FT2232H (Pin 16) | MCU (PA14) & FPGA (C11) | 3.3V | JTAG Clock (15.0 MHz) | $100\text{ k}\Omega$ Pull-down | JTAG Master Adapter |
 | **6** | `JTAG_TMS` | FT2232H (Pin 17) | MCU (PA13) & FPGA (D11) | 3.3V | JTAG TAP State Select | $10\text{ k}\Omega$ Pull-up | JTAG Master Adapter |
 | **7** | `JTAG_TDI` | FT2232H (Pin 18) | MCU PA15 (TAP#0 TDI) | 3.3V | JTAG Test Data In | $10\text{ k}\Omega$ Pull-up | JTAG Master Adapter |
 | **8** | `MCU_TDO_CHAIN` | MCU PB3 (TAP#0 TDO) | FPGA D12 (TAP#1 TDI) | 3.3V | JTAG Inter-TAP Serial Link | None | MCU TAP#0 (Slave 0) |
 | **9** | `FPGA_TDO` | FPGA C12 (TAP#1 TDO) | FT2232H (Pin 19 TDO) | 3.3V | JTAG Scan Return | $10\text{ k}\Omega$ Pull-up | FPGA TAP#1 (Slave 1) |
-| **10** | `MCU_SPI_MOSI` | MCU PB5 (SPI1 MOSI) | TXB0108 (B1) &rarr; FPGA (A4) | 3.3V &rarr; 1.8V | High-Speed Telemetry (25 MHz) | None | MCU Master |
-| **11** | `MCU_SPI_MISO` | FPGA (A5) &rarr; TXB0108 | MCU PB4 (SPI1 MISO) | 1.8V &rarr; 3.3V | High-Speed Telemetry Return | None | FPGA Slave |
-| **12** | `MCU_SPI_SCK` | MCU PB3 (SPI1 SCK) | TXB0108 (B2) &rarr; FPGA (B4) | 3.3V &rarr; 1.8V | Synchronous SPI Clock | $100\text{ k}\Omega$ Pull-down | MCU Master |
-| **13** | `FPGA_IRQ_N` | FPGA (B5) &rarr; TXB0108 | MCU PB0 (EXTI0) | 1.8V &rarr; 3.3V | Active-Low Event Interrupt | $4.7\text{ k}\Omega$ Pull-up | FPGA Interrupt Source |
+| **10** | `MCU_SPI_MOSI` | MCU PB5 (SPI1 MOSI) | SN74AXC8T245 (B1) &rarr; FPGA (A4) | 3.3V &rarr; 1.8V | High-Speed Telemetry (25 MHz) | None | MCU Master |
+| **11** | `MCU_SPI_MISO` | FPGA (A5) &rarr; SN74AXC8T245 | MCU PB4 (SPI1 MISO) | 1.8V &rarr; 3.3V | High-Speed Telemetry Return | None | FPGA Slave |
+| **12** | `MCU_SPI_SCK` | MCU PB3 (SPI1 SCK) | SN74AXC8T245 (B2) &rarr; FPGA (B4) | 3.3V &rarr; 1.8V | Synchronous SPI Clock | $100\text{ k}\Omega$ Pull-down | MCU Master |
+| **13** | `FPGA_IRQ_N` | FPGA (B5) &rarr; SN74AXC8T245 | MCU PB0 (EXTI0) | 1.8V &rarr; 3.3V | Active-Low Event Interrupt | $4.7\text{ k}\Omega$ Pull-up | FPGA Interrupt Source |
 | **14** | `SYS_RESET_N` | Manual Switch / FTDI | MCU NRST & FPGA PROG_B | 3.3V | System Master Reset | $10\text{ k}\Omega$ Pull-up | Shared Open-Drain Bus |
 
 ---

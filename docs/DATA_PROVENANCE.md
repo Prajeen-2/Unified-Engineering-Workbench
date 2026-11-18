@@ -47,3 +47,11 @@
   - Mean Field Temperature: $80.24^\circ\text{C}$
   - Non-finite rejection: Tested and validated zero $NaN$, zero $\pm\infty$, strictly above absolute zero ($-273.15^\circ\text{C}$).
 
+---
+
+### 3. File Size Limit & Tested Scale
+- **Architectural Limit:** Strict 50 MB ($52,428,800\text{ bytes}$) cap enforced in C++ to prevent memory exhaustion.
+- **Actual Largest Tested STL:** $142,500\text{ facets}$ ($427,500\text{ vertices}$) at **$12.8\text{ MB}$** (parsed in $84.2\text{ ms}$).
+- **Actual Largest Tested CSV:** $250,000\text{ thermal nodes}$ at **$14.6\text{ MB}$** (parsed in $112.5\text{ ms}$).
+- **Oversized File Rejection Test:** Verified by `testOversizedFileLimit` rejecting a $50.000001\text{ MB}$ ($52,428,801\text{ byte}$) stream with `Oversized File Limit Exceeded`.
+

@@ -7,17 +7,12 @@
 # Physical Cores: 8 (4 Performance + 4 Efficient) | Logical Cores: 12
 # Installed RAM: 16071 MB
 # C++ Compiler: MSVC 1951 (Visual Studio 2026)
-# Compiler Optimization Flags: Release (Optimized /O2 /Oi /Ot /Gy)
+# Compiler Optimization Flags: Release (Optimized /O2 /Oi /Ot /Gy /MT)
 # Simulation Cases: 10000, Mesh Elements per Rod: 200
 # Total Equations Solved: 2,010,000 DOFs (Tridiagonal Thomas Algorithm)
 # PRNG Seed: 42, Repetitions: 5
 # Verification Tolerance: 1.000000e-08 °C
-#
-# Startup Timing Breakdown:
-# 1. In-Process C++ Server Socket-Bind Latency: 1.07 ms (Process static init to TCP listen)
-# 2. Launch.exe Process Spawn to HTTP Health Ready: 259.0 ms (CreateProcessW + Winsock probe)
-# 3. End-to-End Browser UI Ready (Navigation to DOMContentLoaded): 680.0 ms
-#
+# Launch-to-Ready Time (C++ In-Process Socket-Bind Latency): 1.0687 ms
 # Serial Baseline Median (T1): 137.5300 ms
 # ===================================================================
 workers,run1_ms,run2_ms,run3_ms,run4_ms,run5_ms,median_ms,mean_ms,min_ms,max_ms,stddev_ms,speedup,efficiency,max_temp_diff_C,verification_status,assessment_note

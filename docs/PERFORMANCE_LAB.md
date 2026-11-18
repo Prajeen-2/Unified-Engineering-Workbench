@@ -36,9 +36,9 @@ The implementation delivers:
 | **Operating System** | Windows 11 x64 (NT Kernel 10.0.26100) | Win32 Platform API |
 | **C++ Compiler** | MSVC 19.51.36247 (Visual Studio 2026 x64) | Macro `_MSC_VER` |
 | **Optimization Flags** | `/W4 /EHsc /utf-8 /permissive- /O2 /Oi /Ot /Gy /MT` | MSVC Toolchain Definition |
-| **Server Socket-Bind Latency (In-Process)** | $1.07 \text{ ms}$ | `std::chrono::steady_clock` from C++ static init to TCP port listen |
-| **Process-Spawn to HTTP Health Ready** | $259 \text{ ms}$ | Win32 `CreateProcessW` + Winsock HTTP 200 OK polling |
-| **End-to-End Browser UI Ready** | $\approx 680 \text{ ms}$ | Browser spawn + asset fetch + Three.js/Plotly mount + telemetry ping |
+| **Server Socket-Bind Latency (In-Process)** | $1.07 \text{ ms}$ | Automated C++ code measurement (`std::chrono::steady_clock` to TCP listen) |
+| **Process-Spawn to HTTP Health Ready** | $\approx 260 \text{ ms}$ | Manually measured (`CreateProcessW` + Winsock HTTP 200 OK polling) |
+| **End-to-End Browser UI Ready** | $\approx 680 \text{ ms}$ | Manually measured (Browser Navigation Timing: navigationStart to DOM ready) |
 
 ---
 
