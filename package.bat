@@ -27,6 +27,15 @@ if %ERRORLEVEL% neq 0 goto :build_failed
 where tar.exe >nul 2>&1
 if %ERRORLEVEL% neq 0 goto :no_tar
 
+:: 2.5 Clean intermediate build directory to eliminate absolute paths and reduce package size
+if exist "build" (
+    echo [INFO] Purging intermediate build/ directory before packaging to remove absolute paths...
+    rmdir /s /q "build"
+)
+if exist "bin" (
+    rmdir /s /q "bin"
+)
+
 :: 3. Clean any existing package with the same name
 if exist "%PACKAGE_NAME%" (
     echo [INFO] Removing previous %PACKAGE_NAME%...
