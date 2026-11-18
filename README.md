@@ -159,8 +159,8 @@ package.bat CandidateID
 | 5 | **CMakeLists.txt** | [`CMakeLists.txt`](CMakeLists.txt) | Complete MSVC Release configuration with CTest definitions. |
 | 6 | **Dependency Versions** | [`DEPENDENCIES.lock.md`](DEPENDENCIES.lock.md), [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) | Locked versions: cpp-httplib 0.15.3, nlohmann/json 3.11.3, Three.js r128, Plotly 2.29.1. |
 | 7 | **Editor Configuration** | [`.editorconfig`](.editorconfig), [`.vscode/`](.vscode/) | VS Code launch/tasks/settings and cross-editor whitespace rules. |
-| 8 | **Example STL** | [`data/stl/engineering_bracket.stl`](data/stl/engineering_bracket.stl) | 20-facet coarse engineering step-joint CAD solid (3.2 KB). |
-| 9 | **Example Temperature CSV** | [`data/csv/synthetic_thermal_field.csv`](data/csv/synthetic_thermal_field.csv) | 100-node conduction-convection thermal scalar cloud ($37.76^\circ\text{C}$–$150.00^\circ\text{C}$). |
+| 8 | **Example STL** | [`data/stl/engineering_bracket.stl`](data/stl/engineering_bracket.stl), [`data/stl/test_cylinder.stl`](data/stl/test_cylinder.stl) | Step-joint bracket (3.2 KB) and cylindrical test specimen solid (26.1 KB). |
+| 9 | **Example Temperature CSV** | [`data/csv/synthetic_thermal_field.csv`](data/csv/synthetic_thermal_field.csv), [`data/csv/test_cylinder.csv`](data/csv/test_cylinder.csv) | 100-node conduction field ($37.76^\circ\text{C}$–$150.00^\circ\text{C}$) and 333-node cylinder thermal gradient ($70.0^\circ\text{C}$–$200.0^\circ\text{C}$). |
 | 10 | **Automated Tests** | [`tests/`](tests/) | 5 comprehensive CTest suites verifying all subsystems. |
 | 11 | **Benchmark CSV** | [`results/csv/performance_multicore.csv`](results/csv/performance_multicore.csv), [`thermal_convergence.csv`](results/csv/thermal_convergence.csv) | Real measured wall-clock execution timings and convergence profiles. |
 | 12 | **Labelled Graphs** | [`results/plots/speedup_vs_workers.svg`](results/plots/speedup_vs_workers.svg), [`thermal_convergence.svg`](results/plots/thermal_convergence.svg) | Production vector SVG plots with theoretical error bounds. |
