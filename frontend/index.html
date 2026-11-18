@@ -385,7 +385,7 @@
                             </div>
                         </div>
                         <div style="display:flex; align-items:center; gap:10px;">
-                            <span class="metric-pill pill-success" id="thermal-status-badge">READY</span>
+                            <span class="metric-pill pill-info" id="thermal-status-badge">AWAITING RUN</span>
                             <button class="btn-primary" id="btn-run-thermal">Run Simulation</button>
                             <button class="btn-secondary" id="btn-run-convergence">Run Convergence Study</button>
                             <button class="btn-control" id="btn-cancel-thermal" style="display:none; border-color:var(--accent-red); color:var(--accent-red);">Cancel Study</button>
@@ -406,11 +406,11 @@
                         </div>
                         <div class="metric-row">
                             <span class="metric-label">Element Count (N)</span>
-                            <span class="metric-value" id="res-thermal-elements">10</span>
+                            <span class="metric-value" id="res-thermal-elements">--</span>
                         </div>
                         <div class="metric-row">
                             <span class="metric-label">Active Nodes (N + 1)</span>
-                            <span class="metric-value" id="res-thermal-nodes">11</span>
+                            <span class="metric-value" id="res-thermal-nodes">--</span>
                         </div>
                     </div>
 
@@ -421,11 +421,11 @@
                         </div>
                         <div class="metric-row">
                             <span class="metric-label">Max Temperature</span>
-                            <span class="metric-value" id="res-thermal-max-temp" style="color:var(--accent-amber); font-weight:700;">185.00 °C</span>
+                            <span class="metric-value" id="res-thermal-max-temp" style="color:var(--accent-amber); font-weight:700;">-- °C</span>
                         </div>
                         <div class="metric-row">
                             <span class="metric-label">Spatial Location</span>
-                            <span class="metric-value" id="res-thermal-max-temp-loc">at x = 0.500 m</span>
+                            <span class="metric-value" id="res-thermal-max-temp-loc">Awaiting solve</span>
                         </div>
                     </div>
 
@@ -436,11 +436,11 @@
                         </div>
                         <div class="metric-row">
                             <span class="metric-label">Max Midpoint Error</span>
-                            <span class="metric-value" id="res-thermal-max-error" style="color:var(--accent-cyan); font-weight:700;">1.250000 °C</span>
+                            <span class="metric-value" id="res-thermal-max-error" style="color:var(--accent-cyan); font-weight:700;">-- °C</span>
                         </div>
                         <div class="metric-row">
                             <span class="metric-label">Theoretical Bound</span>
-                            <span class="metric-value" id="res-thermal-theory-error">Theory: 1.250000 °C</span>
+                            <span class="metric-value" id="res-thermal-theory-error">Theory: -- °C</span>
                         </div>
                     </div>
                 </div>
@@ -548,12 +548,12 @@
                                                 <th>Nodes</th>
                                                 <th>Element Length (h)</th>
                                                 <th>Max Midpoint Error</th>
-                                                <th>Theoretical Error (125/N²)</th>
+                                                <th>Theoretical Error (q·h² / 8k)</th>
                                                 <th>Convergence Rate (α)</th>
                                             </tr>
                                         </thead>
                                         <tbody id="table-convergence-body">
-                                            <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Running C++ convergence study...</td></tr>
+                                            <tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:16px;">Click &quot;Run Convergence Study&quot; to execute multi-mesh C++ analysis (N=10, 20, 40, 80)...</td></tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -574,7 +574,7 @@
                                             </tr>
                                         </thead>
                                         <tbody id="table-nodal-body">
-                                            <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Run simulation to view nodal results...</td></tr>
+                                            <tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:16px;">Click &quot;Run Simulation&quot; to compute finite element nodal temperatures and midpoint errors...</td></tr>
                                         </tbody>
                                     </table>
                                 </div>

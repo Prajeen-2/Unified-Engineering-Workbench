@@ -44,6 +44,9 @@ document.addEventListener('DOMContentLoaded', () => {
             window.geometryViewer.onWindowResize();
         }
         if (targetModule === 'thermal' && window.thermalAnalysis) {
+            if (!window.thermalAnalysis.lastSolveResult) {
+                window.thermalAnalysis.renderPlaceholderCharts();
+            }
             window.thermalAnalysis.resizeCharts();
         }
         if (targetModule === 'performance' && window.performanceLab) {

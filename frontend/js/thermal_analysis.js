@@ -60,9 +60,18 @@ class ThermalAnalysis {
             }
         });
 
+        // Track changes on all parameters so UI never looks "fixed"
+        const paramInputs = [
+            this.inputLength, this.inputArea, this.inputConductivity,
+            this.inputHeatGen, this.inputTLeft, this.inputTRight
+        ];
+        paramInputs.forEach(input => {
+            input?.addEventListener('input', () => this.onParameterModified());
+        });
+
         this.selectMesh?.addEventListener('change', (e) => {
             this.currentMesh = parseInt(e.target.value, 10);
-            this.runSimulation();
+            this.onParameterModified();
         });
 
         this.btnExportTemp?.addEventListener('click', () => this.exportCsv('temperature'));
@@ -98,6 +107,26 @@ class ThermalAnalysis {
             t_right: parseFloat(this.inputTRight.value) || 20.0,
             num_elements: parseInt(this.selectMesh.value, 10) || 10
         };
+    }
+
+    onParameterModified() {
+        this.hideError();
+        this.setStatus('PARAMETERS MODIFIED • CLICK RUN', 'pending');
+        if (this.cardMaxTemp) {
+            this.cardMaxTemp.style.opacity = '0.45';
+        }
+        if (this.cardMaxError) {
+            this.cardMaxError.style.opacity = '0.45';
+        }
+        if (this.cardElements) {
+            this.cardElements.style.opacity = '0.45';
+        }
+        if (this.cardNodes) {
+            this.cardNodes.style.opacity = '0.45';
+        }
+        if (this.cardMaxTempLoc) {
+            this.cardMaxTempLoc.innerText = 'Pending re-run';
+        }
     }
 
     resetParameters() {
@@ -247,12 +276,28 @@ class ThermalAnalysis {
     }
 
     updateResultCards(data) {
-        if (this.cardElements) this.cardElements.innerText = data.num_elements;
-        if (this.cardNodes) this.cardNodes.innerText = data.num_nodes;
-        if (this.cardMaxTemp) this.cardMaxTemp.innerText = `${data.max_temperature_C.toFixed(2)} °C`;
-        if (this.cardMaxTempLoc) this.cardMaxTempLoc.innerText = `at x = ${data.x_at_max_temperature_m.toFixed(3)} m`;
-        if (this.cardMaxError) this.cardMaxError.innerText = `${data.max_midpoint_error_C.toFixed(6)} °C`;
-        if (this.cardTheoryError) this.cardTheoryError.innerText = `Theory: ${data.theoretical_max_midpoint_error_C.toFixed(6)} °C`;
+        if (this.cardElements) {
+            this.cardElements.innerText = data.num_elements;
+            this.cardElements.style.opacity = '1.0';
+        }
+        if (this.cardNodes) {
+            this.cardNodes.innerText = data.num_nodes;
+            this.cardNodes.style.opacity = '1.0';
+        }
+        if (this.cardMaxTemp) {
+            this.cardMaxTemp.innerText = `${data.max_temperature_C.toFixed(2)} °C`;
+            this.cardMaxTemp.style.opacity = '1.0';
+        }
+        if (this.cardMaxTempLoc) {
+            this.cardMaxTempLoc.innerText = `at x = ${data.x_at_max_temperature_m.toFixed(3)} m`;
+        }
+        if (this.cardMaxError) {
+            this.cardMaxError.innerText = `${data.max_midpoint_error_C.toFixed(6)} °C`;
+            this.cardMaxError.style.opacity = '1.0';
+        }
+        if (this.cardTheoryError) {
+            this.cardTheoryError.innerText = `Theory: ${data.theoretical_max_midpoint_error_C.toFixed(6)} °C`;
+        }
     }
 
     renderTemperatureChart(data) {
@@ -313,14 +358,27 @@ class ThermalAnalysis {
             });
         }
 
-        // 3. Peak temperature annotation point
-        const peakX = (420.0 / 1000.0) * L;
-        const peakT = T0 + (TL - T0) * (peakX / L) + (q / (2.0 * k)) * peakX * (L - peakX);
+        // 3. Peak temperature annotation point (analytically derived from dT/dx = 0)
+        let peakX = 0;
+        let peakT = Math.max(T0, TL);
+        if (Math.abs(q) > 1e-6) {
+            const xStar = (L / 2.0) + (k * (TL - T0)) / (q * L);
+            if (xStar >= 0 && xStar <= L) {
+                peakX = xStar;
+                peakT = T0 + (TL - T0) * (peakX / L) + (q / (2.0 * k)) * peakX * (L - peakX);
+            } else {
+                peakX = (T0 >= TL) ? 0 : L;
+                peakT = (T0 >= TL) ? T0 : TL;
+            }
+        } else {
+            peakX = (T0 >= TL) ? 0 : L;
+            peakT = (T0 >= TL) ? T0 : TL;
+        }
         traces.push({
             x: [peakX],
             y: [peakT],
             mode: 'markers',
-            name: `Analytical Peak (${peakT.toFixed(1)} °C)`,
+            name: `Analytical Peak (${peakT.toFixed(2)} °C at x = ${peakX.toFixed(3)} m)`,
             marker: { color: '#10b981', size: 10, symbol: 'diamond' }
         });
 
@@ -445,11 +503,16 @@ class ThermalAnalysis {
             marker: { size: 8, symbol: 'circle' }
         };
 
+        const p = studyData.parameters;
+        const qConst = (p && p.heat_generation_W_m3 && p.conductivity_W_mK)
+            ? (p.heat_generation_W_m3 * Math.pow(p.length_m || 1.0, 2)) / (8.0 * p.conductivity_W_mK)
+            : 125.0;
+
         const traceTheory = {
             x: nVals,
             y: errTheory,
             mode: 'lines+markers',
-            name: 'Theoretical O(h²) = 125/N²',
+            name: `Theoretical O(h²) = ${qConst.toFixed(1)}/N²`,
             line: { color: '#38bdf8', width: 2, dash: 'dash' },
             marker: { size: 6, symbol: 'square' }
         };
@@ -580,30 +643,79 @@ class ThermalAnalysis {
         window.open(url, '_blank');
         window.showToast?.(`Downloading ${type} CSV export...`, 'info');
     }
+
+    renderPlaceholderCharts() {
+        const bg = '#182030';
+        const pbg = '#0e1420';
+        const grid = '#222e42';
+        const txt = '#8b949e';
+
+        const placeholderLayout = (titleText, annotText, xTitle, yTitle) => ({
+            title: {
+                text: titleText,
+                font: { size: 12, color: '#e6edf3' },
+                x: 0.02, y: 0.97, xanchor: 'left', yanchor: 'top'
+            },
+            paper_bgcolor: bg,
+            plot_bgcolor: pbg,
+            margin: { l: 65, r: 25, t: 70, b: 45 },
+            xaxis: { title: xTitle, color: txt, gridcolor: grid, zerolinecolor: grid, range: [0, 1] },
+            yaxis: { title: yTitle, color: txt, gridcolor: grid, zerolinecolor: grid, range: [0, 200] },
+            annotations: [{
+                text: annotText,
+                xref: 'paper', yref: 'paper',
+                x: 0.5, y: 0.5,
+                showarrow: false,
+                font: { size: 13, color: '#64748b' }
+            }]
+        });
+
+        const tempDiv = document.getElementById('plot-temperature-distribution');
+        if (tempDiv && typeof Plotly !== 'undefined' && !this.lastSolveResult) {
+            Plotly.newPlot(tempDiv, [], placeholderLayout(
+                '1D Temperature Distribution T(x) [Awaiting Run]',
+                'Click "Run Simulation" above to solve 1D Galerkin FEA with current parameters',
+                'Position along rod x [m]',
+                'Temperature T [°C]'
+            ), { responsive: true, displayModeBar: false });
+        }
+
+        const midDiv = document.getElementById('plot-midpoint-error');
+        if (midDiv && typeof Plotly !== 'undefined' && !this.lastSolveResult) {
+            Plotly.newPlot(midDiv, [], placeholderLayout(
+                'Element Midpoint Error Distribution [Awaiting Run]',
+                'Run simulation to compute midpoint error vs analytical solution',
+                'Midpoint x [m]',
+                'Error |T_fem - T_exact| [°C]'
+            ), { responsive: true, displayModeBar: false });
+        }
+
+        const convDiv = document.getElementById('plot-mesh-convergence');
+        if (convDiv && typeof Plotly !== 'undefined' && !this.lastConvergenceResult) {
+            Plotly.newPlot(convDiv, [], placeholderLayout(
+                'Mesh Convergence Study (Log-Log) [Awaiting Run]',
+                'Click "Run Convergence Study" to verify quadratic O(h²) convergence',
+                'Elements N (Log Scale)',
+                'Max Midpoint Error [°C]'
+            ), { responsive: true, displayModeBar: false });
+        }
+    }
+
+    resizeCharts() {
+        ['plot-temperature-distribution', 'plot-midpoint-error', 'plot-mesh-convergence'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el && typeof Plotly !== 'undefined' && el.data) {
+                Plotly.Plots.resize(el);
+            }
+        });
+    }
 }
 
 // Global instance
 window.thermalAnalysis = null;
 document.addEventListener('DOMContentLoaded', () => {
     window.thermalAnalysis = new ThermalAnalysis();
-
-    // Trigger run on first navigate to thermal view
-    const thermalTab = document.querySelector('.nav-item[data-module="thermal"]');
-    if (thermalTab) {
-        thermalTab.addEventListener('click', () => {
-            if (window.thermalAnalysis && !window.thermalAnalysis.hasRunInitial) {
-                window.thermalAnalysis.hasRunInitial = true;
-                setTimeout(() => {
-                    window.thermalAnalysis.runSimulation();
-                }, 100);
-            }
-        });
-    }
-
-    if (window.location.hash === '#thermal') {
-        window.thermalAnalysis.hasRunInitial = true;
-        setTimeout(() => {
-            window.thermalAnalysis.runSimulation();
-        }, 150);
-    }
+    setTimeout(() => {
+        window.thermalAnalysis.renderPlaceholderCharts();
+    }, 100);
 });

@@ -16,3 +16,8 @@ This directory contains standalone, reproducible audit and measurement utilities
      - Full End-to-End Launch-to-Ready: $\approx 913\text{ ms}$ ($< 1\text{ second}$).
    - Automatically captures full-viewport screenshot saved to `results/plots/startup_timing_measured.png`.
 
+3. **`test_thermal_ui.js`**:
+   - End-to-end headless browser test verifying that the Thermal Analysis view starts in a clean `AWAITING RUN` state with `--` placeholders before running.
+   - Tests that clicking "Run Simulation" solves the problem dynamically.
+   - Tests that modifying input parameters ($T_0, T_L, q, k, L, N$) transitions UI to `PARAMETERS MODIFIED • CLICK RUN`.
+   - Tests that re-running computes the custom analytical and numerical values dynamically (e.g. $T_0=150^\circ\text{C}, q=20000\,\text{W/m}^3 \to T_{\max}=338.00^\circ\text{C}, \text{Error}_{\max}=2.500000^\circ\text{C}$).
