@@ -35,8 +35,10 @@ The implementation delivers:
 | **Available RAM** | 2,750 MB - 3,200 MB Free | `GlobalMemoryStatusEx(&memStatus)` |
 | **Operating System** | Windows 11 x64 (NT Kernel 10.0.26100) | Win32 Platform API |
 | **C++ Compiler** | MSVC 19.51.36247 (Visual Studio 2026 x64) | Macro `_MSC_VER` |
-| **Optimization Flags** | `/W4 /EHsc /utf-8 /permissive- /O2 /Oi /Ot /Gy /MD` | MSVC Toolchain Definition |
-| **Server Launch-to-Ready** | $1.72 \text{ ms}$ | `std::chrono::steady_clock` from main entry to listen |
+| **Optimization Flags** | `/W4 /EHsc /utf-8 /permissive- /O2 /Oi /Ot /Gy /MT` | MSVC Toolchain Definition |
+| **Server Socket-Bind Latency (In-Process)** | $1.07 \text{ ms}$ | `std::chrono::steady_clock` from C++ static init to TCP port listen |
+| **Process-Spawn to HTTP Health Ready** | $259 \text{ ms}$ | Win32 `CreateProcessW` + Winsock HTTP 200 OK polling |
+| **End-to-End Browser UI Ready** | $\approx 680 \text{ ms}$ | Browser spawn + asset fetch + Three.js/Plotly mount + telemetry ping |
 
 ---
 
@@ -117,15 +119,15 @@ $$\text{Parallel Efficiency: } E_p = \frac{S_p}{p} = \frac{T_1}{p \cdot T_p}$$
 
 ## 5. Measured Experimental Benchmark Results
 
-*Workload Profile:* $M = 500$ cases, $N = 100$ linear elements/rod, PRNG Seed = 42.  
-*Serial Baseline Median ($T_1$):* $2.299 \text{ ms}$
+*Workload Profile:* $M = 10,000$ cases, $N = 200$ linear elements/rod ($2,010,000$ algebraic DOFs), PRNG Seed = 42.  
+*Serial Baseline Median ($T_1$):* $137.5300 \text{ ms}$
 
 | Workers ($p$) | Run 1 (ms) | Run 2 (ms) | Run 3 (ms) | Run 4 (ms) | Run 5 (ms) | Median $T_p$ (ms) | Speedup $S_p$ | Efficiency $E_p$ | Max $\Delta T$ vs. Serial (°C) | Verification |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **1 Worker** | 1.722 | 1.725 | 1.375 | 1.151 | 1.110 | **1.375** | **1.000&times;** | **100.0%** | $0.00 \times 10^{-14}$ | `PASS` |
-| **2 Workers** | 1.335 | 1.092 | 0.719 | 0.689 | 0.672 | **0.719** | **1.911&times;** | **95.6%** | $0.00 \times 10^{-14}$ | `PASS` |
-| **3 Workers** | 0.897 | 0.831 | 0.835 | 0.679 | 0.517 | **0.831** | **1.655&times;** | **55.2%** | $0.00 \times 10^{-14}$ | `PASS` |
-| **4 Workers** | 0.589 | 0.454 | 0.559 | 0.428 | 0.405 | **0.454** | **3.032&times;** | **75.8%** | $0.00 \times 10^{-14}$ | `PASS` |
+| **1 Worker** | 137.830 | 132.871 | 136.450 | 137.530 | 146.746 | **137.530** | **1.0000&times;** | **100.0%** | $0.00 \times 10^{-14}$ | `PASS` |
+| **2 Workers** | 83.348 | 82.408 | 81.211 | 75.380 | 75.641 | **81.211** | **1.6935&times;** | **84.7%** | $0.00 \times 10^{-14}$ | `PASS` |
+| **3 Workers** | 57.780 | 58.303 | 55.118 | 58.521 | 55.265 | **57.780** | **2.3802&times;** | **79.3%** | $0.00 \times 10^{-14}$ | `PASS` |
+| **4 Workers** | 47.464 | 53.992 | 45.493 | 47.365 | 49.376 | **47.464** | **2.8976&times;** | **72.4%** | $0.00 \times 10^{-14}$ | `PASS` |
 
 *Verification Outcome:* **100% PASS** ($\Delta T_{\max} = 0.000000 \text{ }^\circ\text{C} \le 1.0 \times 10^{-8} \text{ }^\circ\text{C}$).
 

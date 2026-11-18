@@ -137,28 +137,28 @@ class PerformanceLab {
         const elElements = document.getElementById('perf-input-elements');
         const elSeed = document.getElementById('perf-input-seed');
 
-        if (elCases) elCases.value = 500;
-        if (elElements) elElements.value = 100;
+        if (elCases) elCases.value = 10000;
+        if (elElements) elElements.value = 200;
         if (elSeed) elSeed.value = 42;
 
         if (window.showToast) {
-            window.showToast('Workload configuration reset to default parameters (500 cases, 100 elements, seed 42).', 'info');
+            window.showToast('Workload configuration reset to default parameters (10,000 cases, 200 elements, seed 42).', 'info');
         }
     }
 
     async runBenchmark() {
         if (this.isRunning) return;
 
-        const numCases = parseInt(document.getElementById('perf-input-cases')?.value || '500', 10);
-        const numElements = parseInt(document.getElementById('perf-input-elements')?.value || '100', 10);
+        const numCases = parseInt(document.getElementById('perf-input-cases')?.value || '10000', 10);
+        const numElements = parseInt(document.getElementById('perf-input-elements')?.value || '200', 10);
         const randomSeed = parseInt(document.getElementById('perf-input-seed')?.value || '42', 10);
 
-        if (isNaN(numCases) || numCases <= 0 || numCases > 5000) {
-            if (window.showToast) window.showToast('Cases must be between 50 and 5000.', 'error');
+        if (isNaN(numCases) || numCases <= 0 || numCases > 50000) {
+            if (window.showToast) window.showToast('Cases must be between 50 and 50,000.', 'error');
             return;
         }
-        if (isNaN(numElements) || numElements < 10 || numElements > 500) {
-            if (window.showToast) window.showToast('Elements must be between 10 and 500.', 'error');
+        if (isNaN(numElements) || numElements < 10 || numElements > 2000) {
+            if (window.showToast) window.showToast('Elements must be between 10 and 2,000.', 'error');
             return;
         }
 
@@ -475,8 +475,8 @@ class PerformanceLab {
     exportCsv() {
         if (!this.currentBenchmarkData) {
             // If no benchmark has been run yet in UI, fetch via server URL with default parameters
-            const numCases = parseInt(document.getElementById('perf-input-cases')?.value || '500', 10);
-            const numElements = parseInt(document.getElementById('perf-input-elements')?.value || '100', 10);
+            const numCases = parseInt(document.getElementById('perf-input-cases')?.value || '10000', 10);
+            const numElements = parseInt(document.getElementById('perf-input-elements')?.value || '200', 10);
             const seed = parseInt(document.getElementById('perf-input-seed')?.value || '42', 10);
             const url = window.api.getPerformanceExportCsvUrl({
                 num_cases: numCases,

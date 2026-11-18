@@ -1,21 +1,27 @@
 # ===================================================================
 # Unified Engineering Workbench - Multicore Performance Lab Benchmark Export
-# Timestamp: 2026-11-13 07:03:58 UTC
+# Timestamp: 2026-11-18 12:04:41 UTC
 # Hardware Audit Metadata:
 # Host OS: Windows 11 x64 (x86_64 / x64)
 # CPU Processor: 13th Gen Intel(R) Core(TM) i5-13420H
-# Physical Cores: 8 | Logical Cores: 12
+# Physical Cores: 8 (4 Performance + 4 Efficient) | Logical Cores: 12
 # Installed RAM: 16071 MB
 # C++ Compiler: MSVC 1951 (Visual Studio 2026)
-# Compiler Optimization Flags: Release (Optimized /O2)
-# Simulation Cases: 100, Mesh Elements per Rod: 20
+# Compiler Optimization Flags: Release (Optimized /O2 /Oi /Ot /Gy)
+# Simulation Cases: 10000, Mesh Elements per Rod: 200
+# Total Equations Solved: 2,010,000 DOFs (Tridiagonal Thomas Algorithm)
 # PRNG Seed: 42, Repetitions: 5
 # Verification Tolerance: 1.000000e-08 °C
-# Launch-to-Ready Time: 1.0687 ms
-# Serial Baseline Median (T1): 0.1492 ms
+#
+# Startup Timing Breakdown:
+# 1. In-Process C++ Server Socket-Bind Latency: 1.07 ms (Process static init to TCP listen)
+# 2. Launch.exe Process Spawn to HTTP Health Ready: 259.0 ms (CreateProcessW + Winsock probe)
+# 3. End-to-End Browser UI Ready (Navigation to DOMContentLoaded): 680.0 ms
+#
+# Serial Baseline Median (T1): 137.5300 ms
 # ===================================================================
 workers,run1_ms,run2_ms,run3_ms,run4_ms,run5_ms,median_ms,mean_ms,min_ms,max_ms,stddev_ms,speedup,efficiency,max_temp_diff_C,verification_status,assessment_note
-1,0.1472,0.1293,0.0840,0.1077,0.0838,0.1077,0.1104,0.0838,0.1472,0.0279,1.0000,1.0000,0.000000e+00,PASS,assessable
-2,0.1169,0.1118,0.0875,0.0949,0.0741,0.0949,0.0970,0.0741,0.1169,0.0176,1.1349,0.5674,0.000000e+00,PASS,assessable
-3,0.0692,0.0613,0.0719,0.0712,0.0684,0.0692,0.0684,0.0613,0.0719,0.0042,1.5564,0.5188,0.000000e+00,PASS,assessable
-4,0.0618,0.0719,0.0638,0.0600,0.0528,0.0618,0.0621,0.0528,0.0719,0.0069,1.7427,0.4357,0.000000e+00,PASS,assessable
+1,137.8299,132.8706,136.4504,137.5300,146.7456,137.5300,138.2853,132.8706,146.7456,5.1245,1.0000,1.0000,0.000000e+00,PASS,assessable
+2,83.3476,82.4078,81.2111,75.3802,75.6405,81.2111,79.5974,75.3802,83.3476,3.8082,1.6935,0.8467,0.000000e+00,PASS,assessable
+3,57.7797,58.3032,55.1184,58.5208,55.2652,57.7797,56.9975,55.1184,58.5208,1.6710,2.3802,0.7934,0.000000e+00,PASS,assessable
+4,47.4636,53.9923,45.4925,47.3647,49.3759,47.4636,48.7378,45.4925,53.9923,3.1764,2.8976,0.7244,0.000000e+00,PASS,assessable

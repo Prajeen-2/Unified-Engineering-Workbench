@@ -67,22 +67,28 @@ Multicore parallelization is implemented using a bounded worker pool (`workbench
 - **Cores**: 8 Physical Cores (4 Performance Cores, 4 Efficient Cores) / 12 Logical Cores
 - **RAM**: 16,071 MB DDR5
 - **Compiler**: Microsoft Visual C++ 19.51 with `/O2 /Oi /Ot /Gy` optimization flags.
-- **Workload**: 100 deterministic 1D thermal simulation cases, 20 elements per rod, PRNG seed 42, 5 measured repetitions per worker count.
+- **Workload**: 10,000 deterministic 1D thermal simulation cases, 200 elements per rod, PRNG seed 42, 5 measured repetitions per worker count.
 
-#### Measured Benchmark Data (`results/csv/performance_multicore.csv`)
+#### Startup Timing Breakdown: Clarifying Launch-to-Ready
+To eliminate ambiguity regarding startup latencies, the benchmark separates and explicitly reports each distinct phase of application launch:
+1. **C++ In-Process Socket-Bind Latency (`1.07 ms`)**: Measured using `std::chrono::steady_clock` inside `workbench_server.exe` from static C++ runtime initialization to successful TCP port binding on `127.0.0.1:8080`.
+2. **`Launch.exe` Process-Spawn-to-TCP-Health (`259 ms`)**: Measured from Win32 `Launch.exe` invoking `CreateProcessW` for the headless backend server until Winsock TCP health probes receive `HTTP 200 OK` from `/api/health`.
+3. **End-to-End Browser UI Ready (`~680 ms`)**: Measured from Win32 `ShellExecuteW` browser invocation through default browser process initialization, HTML/CSS asset retrieval, Three.js WebGL shader compilation, Plotly.js DOM mount, and initial client-side telemetry ping.
+
+#### Measured Multicore Benchmark Data (`results/csv/performance_multicore.csv`)
 
 | Workers ($p$) | Repetition Times [ms] | Median $T_p$ [ms] | Speedup $S_p = \frac{T_1}{T_p}$ | Parallel Efficiency $E_p = \frac{S_p}{p}$ | Max Temperature Diff vs Serial [°C] | Verification Status |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **1** | [0.1472, 0.1293, 0.0840, 0.1077, 0.0838] | **0.1077** | 1.0000x | 100.0% | $0.000000 \times 10^0$ | **PASS** |
-| **2** | [0.1169, 0.1118, 0.0875, 0.0949, 0.0741] | **0.0949** | 1.1349x | 56.7% | $0.000000 \times 10^0$ | **PASS** |
-| **3** | [0.0692, 0.0613, 0.0719, 0.0712, 0.0684] | **0.0692** | 1.5564x | 51.9% | $0.000000 \times 10^0$ | **PASS** |
-| **4** | [0.0618, 0.0719, 0.0638, 0.0600, 0.0528] | **0.0618** | 1.7427x | 43.6% | $0.000000 \times 10^0$ | **PASS** |
+| **1** | [137.83, 132.87, 136.45, 137.53, 146.75] | **137.5300** | **1.0000x** | **100.0%** | $0.000000 \times 10^0$ | **PASS** |
+| **2** | [83.35, 82.41, 81.21, 75.38, 75.64] | **81.2111** | **1.6935x** | **84.7%** | $0.000000 \times 10^0$ | **PASS** |
+| **3** | [57.78, 58.30, 55.12, 58.52, 55.27] | **57.7797** | **2.3802x** | **79.3%** | $0.000000 \times 10^0$ | **PASS** |
+| **4** | [47.46, 53.99, 45.49, 47.36, 49.38] | **47.4636** | **2.8976x** | **72.4%** | $0.000000 \times 10^0$ | **PASS** |
 
 ![Speedup vs Workers Plot](../results/plots/speedup_vs_workers.svg)
 
 #### Scalability & Efficiency Analysis
-1. **Numerical Invariance**: Across all worker counts, the maximum temperature difference compared to the serial baseline is identically $0.0^\circ\text{C}$ (well below the $1.0 \times 10^{-8\circ}\text{C}$ threshold), proving zero race conditions and deterministic slot indexing.
-2. **Amdahl's Law and Microsecond Latency**: The total execution time for 100 cases is sub-millisecond (~0.1 ms). At this extremely fast timescale, OS thread scheduling jitter, mutex locking overhead, and dynamic chunk dispatching account for a noticeable fraction of runtime, explaining the sublinear speedup ($1.74\text{x}$ on 4 workers). Larger workloads (e.g., $10,000$ cases) exhibit $> 3.5\text{x}$ scaling.
+1. **Numerical Invariance**: Across all worker counts ($p = 1, 2, 3, 4$), the maximum temperature difference compared to the serial baseline is identically $0.0^\circ\text{C}$ (strictly meeting $\le 1.0 \times 10^{-8\circ}\text{C}$), proving zero race conditions, thread-safe memory isolation, and deterministic slot ordering.
+2. **Robust Multicore Scaling at Scale**: With a production-scale workload of 10,000 cases and 200 elements per rod, the compute time per repetition ($137.5\text{ ms} \to 47.5\text{ ms}$) dwarfs thread pool queue synchronization overhead. The scaling demonstrates strong multicore efficiency ($84.7\%$ on 2 workers, $72.4\%$ on 4 workers). Efficiency reflects realistic cache contention across shared L3 cache and heterogeneous P-core / E-core thread scheduling on the Intel 13th Gen hybrid architecture.
 
 ---
 
