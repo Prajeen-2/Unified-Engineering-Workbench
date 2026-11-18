@@ -1,0 +1,19 @@
+{
+    "files.associations": {
+        "*.hpp": "cpp",
+        "*.cpp": "cpp",
+        "*.h": "c"
+    },
+    "C_Cpp.default.cppStandard": "c++17",
+    "C_Cpp.default.cStandard": "c11",
+    "C_Cpp.default.includePath": [
+        "${workspaceFolder}/include",
+        "${workspaceFolder}/third_party"
+    ],
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "files.eol": "\r\n",
+    "files.trimTrailingWhitespace": true,
+    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "cmake.configureOnOpen": false
+}

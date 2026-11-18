@@ -15,3 +15,4 @@ This directory contains standalone, reproducible audit and measurement utilities
      - Browser Navigation Timing (`domContentLoadedEventEnd - navigationStart`): $882\text{ ms}$ (DOM interactive: 668 ms, window load: 886 ms).
      - Full End-to-End Launch-to-Ready: $\approx 913\text{ ms}$ ($< 1\text{ second}$).
    - Automatically captures full-viewport screenshot saved to `results/plots/startup_timing_measured.png`.
+

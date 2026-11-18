@@ -42,9 +42,13 @@ if exist "%PACKAGE_NAME%" (
     del /f /q "%PACKAGE_NAME%"
 )
 
-:: 4. Assemble package using tar.exe with zip compression (-a)
-echo [INFO] Creating ZIP archive with forward-slash paths...
-tar.exe -a -c -f "%PACKAGE_NAME%" Launch.exe workbench_server.exe frontend data results report docs README.md THIRD_PARTY_NOTICES.md DEPENDENCIES.lock.md
+:: 3.5 Generate fresh Git bundle for repository provenance
+echo [INFO] Generating fresh Git bundle (repo.bundle)...
+git bundle create repo.bundle --all >nul 2>&1
+
+:: 4. Assemble complete package using tar.exe with zip compression (-a)
+echo [INFO] Creating complete ZIP archive with all deliverables...
+tar.exe -a -c -f "%PACKAGE_NAME%" Launch.exe workbench_server.exe src include tests third_party CMakeLists.txt build.bat package.bat .vscode .editorconfig frontend data results report docs tools repo.bundle .git README.md THIRD_PARTY_NOTICES.md DEPENDENCIES.lock.md
 if %ERRORLEVEL% neq 0 goto :pack_failed
 
 echo ===================================================================

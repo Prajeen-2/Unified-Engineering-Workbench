@@ -21,6 +21,11 @@ out/
 .vscode/*
 !.vscode/launch.json
 !.vscode/tasks.json
+!.vscode/settings.json
+
+# Bundles & Archives
+*.zip
+*.bundle
 
 # OS generated
 Thumbs.db
