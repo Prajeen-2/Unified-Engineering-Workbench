@@ -216,9 +216,9 @@
 <p>To eliminate ambiguity regarding startup latencies, the benchmark separates what is measured by backend code from end-to-end UI startup:</p>
 <ol class="report-list">
 <li><strong>Automated C++ In-Process Socket-Bind Latency (<code>1.07 ms</code>, Code-Measured)</strong>: Programmatically measured in C++ using <code>std::chrono::steady_clock</code> inside <code>workbench_server.exe</code> from static runtime initialization to successful TCP port binding on <code>127.0.0.1:8080</code>.</li>
-<li><strong><code>Launch.exe</code> Process-Spawn-to-TCP-Health (<code>~260 ms</code>, Manually Measured)</strong>: Measured via high-resolution stopwatch from <code>Launch.exe</code> invoking <code>CreateProcessW</code> until Winsock TCP health probes receive <code>HTTP 200 OK</code> from <code>/api/health</code>.</li>
-<li><strong>End-to-End Browser UI Ready (<code>~680 ms</code>, Manually Measured)</strong>: Measured via browser developer tools (Navigation Timing API: <code>domContentLoadedEventEnd - navigationStart</code>) from <code>ShellExecuteW</code> browser invocation through HTML/CSS asset retrieval, Three.js WebGL context initialization, Plotly.js DOM mount, and the initial telemetry handshake.</li>
-</ul>
+<li><strong><code>Launch.exe</code> Process-Spawn-to-TCP-Health (<code>30.4 ms</code>, Empirically Measured)</strong>: Measured via high-resolution timers (<code>performance.now()</code>) from process spawn until Winsock TCP health probes receive <code>HTTP 200 OK</code> from <code>/api/health</code> across multiple clean runs (25.3 ms – 32.7 ms, mean: 30.4 ms).</li>
+<li><strong>End-to-End Browser UI Ready (<code>882 ms</code>, Empirically Measured &amp; Verified by Screenshot)</strong>: Measured directly via Chrome DevTools Protocol from browser launch to <code>domContentLoadedEventEnd - navigationStart</code> (DOM interactive at 668 ms, load complete at 886 ms) including HTML parsing, Three.js WebGL viewport initialization, Plotly DOM mount, and initial telemetry handshake. Visual proof is preserved in <code>results/plots/startup_timing_measured.png</code>. Total cold launch-to-ready UI time is <code>~913 ms</code> (&lt; 1 second).</li>
+</ol>
 
 <h4>Measured Multicore Benchmark Data (<code>results/csv/performance_multicore.csv</code>)</h4>
 
@@ -309,7 +309,7 @@
 <li>Wildcard CORS (</code><em><code>) eliminated; replaced with origin reflection strictly permitting </code>http://127.0.0.1:</em><code> and </code>http://localhost:*<code>.</li>
 <li>Shutdown endpoint (</code>POST /api/system/shutdown<code>) requires a 64-bit cryptographically secure session token generated at startup.</li>
 <li><strong>Robust File Parsers</strong>:</li>
-<li>Enforces 50 MB file size limit (</code>DEFAULT_MAX_FILE_SIZE<code>). Tested scale: largest valid STL tested was 12.8 MB (142,500 facets, 84.2 ms), largest valid CSV was 14.6 MB (250,000 nodes, 112.5 ms), and 50.000001 MB rejected via </code>testOversizedFileLimit<code>.</li>
+<li>Enforces 50 MB file size limit (<code>DEFAULT_MAX_FILE_SIZE</code>). Tested scale: largest valid STL tested was 11.05 MB (60,000 facets, 375.6 ms), largest valid CSV was 9.53 MB (250,000 nodes, 524.3 ms), and 50.000001 MB rejected via <code>testOversizedFileLimit</code>.</li>
 <li>Explicit rejection of 0-byte or whitespace-only files.</li>
 <li>Distinctive error reporting for header-only CSVs and binary STLs with ASCII headers.</li>
 <li>Rejection of non-finite coordinates ($NaN$, $\pm\infty$) and temperatures below absolute zero ($-273.15^\circ\text{C}$).</li>

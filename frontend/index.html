@@ -622,7 +622,7 @@
                             <span class="hw-stat-val" id="perf-hw-flags" style="font-size: 11px;">/O2 /Oi /Ot /Gy /utf-8</span>
                         </div>
                         <div class="hw-stat-item">
-                            <span class="hw-stat-label" title="In-Process C++ Socket-Bind: ~1.07 ms | Process Spawn: ~259 ms | UI Ready: ~680 ms">Server Socket-Bind</span>
+                            <span class="hw-stat-label" title="In-Process C++ Socket-Bind: 1.07 ms | Process Spawn: 30.4 ms | UI Ready: 882 ms (Navigation Timing API)">Server Socket-Bind</span>
                             <span class="hw-stat-val" id="perf-hw-launch-time">-- ms</span>
                         </div>
                     </div>
@@ -1641,7 +1641,7 @@
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <span class="metric-pill pill-cyan">Architecture: Pure C++17 Backend</span>
                         <span class="metric-pill pill-blue">Zero External CDN / 100% Offline</span>
-                        <span class="metric-pill pill-green">5/5 CTest Suites Passing</span>
+                        <span class="metric-pill pill-green" title="Last recorded verification run: Nov 18, 2026">5/5 CTest Passing &bull; Last run: Nov 18, 2026</span>
                         <span class="metric-pill pill-purple">Launch.exe Double-Click Start</span>
                     </div>
                 </div>
@@ -1650,7 +1650,7 @@
                 <div class="card" style="margin-bottom: 16px;">
                     <div class="card-header">
                         <span class="card-title">Subsystem Quality Assurance & Engineering Verification Matrix</span>
-                        <span class="metric-pill pill-cyan">Subsystem Audit</span>
+                        <span class="metric-pill pill-cyan">Subsystem Audit &bull; Nov 18, 2026</span>
                     </div>
                     <div class="data-table-scrollable">
                         <table class="data-table" style="font-size: 11px;">
@@ -1661,7 +1661,7 @@
                                     <th>Numerical & Architectural Specification</th>
                                     <th>Verification Benchmark & Tolerance</th>
                                     <th>Observed Output</th>
-                                    <th>Audit Status</th>
+                                    <th>Audit Status <span style="font-size:10px; font-weight:normal; color:var(--text-muted);">(Last run: Nov 18, 2026)</span></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1671,7 +1671,7 @@
                                     <td>Pure ISO C++17 backend, embedded REST IPC, Win32 launcher, zero external runtime</td>
                                     <td>Multi-port failover (8080–8089), 100% local IPC loopback</td>
                                     <td>Fast clean initialization, auto browser launch, zero dependencies</td>
-                                    <td><span class="metric-pill pill-success">VERIFIED PASS</span></td>
+                                    <td><span class="metric-pill pill-success" title="Last recorded verification run: Nov 18, 2026">VERIFIED PASS &bull; Nov 18, 2026</span></td>
                                 </tr>
                                 <tr>
                                     <td style="font-weight: 700; color: var(--accent-cyan);">Geometry & Field View</td>
@@ -1679,7 +1679,7 @@
                                     <td>Dual ASCII STL and CSV parsers, Three.js WebGL viewport, scientific Turbo colormap</td>
                                     <td>Watertight & open mesh handling, spatial coordinate alignment, fit-to-view framing</td>
                                     <td>Seamless CAD surface & nodal cloud rendering with interactive raycasting</td>
-                                    <td><span class="metric-pill pill-success">VERIFIED PASS</span></td>
+                                    <td><span class="metric-pill pill-success" title="Last recorded verification run: Nov 18, 2026">VERIFIED PASS &bull; Nov 18, 2026</span></td>
                                 </tr>
                                 <tr>
                                     <td style="font-weight: 700; color: var(--accent-cyan);">Thermal Simulation</td>
@@ -1687,7 +1687,7 @@
                                     <td>Galerkin linear 2-node finite element formulation with Dirichlet boundary conditions</td>
                                     <td>Mesh convergence across N=10, 20, 40, 80; Midpoint error &le; 125/N&sup2;</td>
                                     <td>Exact analytical agreement at nodes, quadratic &alpha; &approx; 2.000 convergence</td>
-                                    <td><span class="metric-pill pill-success">VERIFIED PASS</span></td>
+                                    <td><span class="metric-pill pill-success" title="Last recorded verification run: Nov 18, 2026">VERIFIED PASS &bull; Nov 18, 2026</span></td>
                                 </tr>
                                 <tr>
                                     <td style="font-weight: 700; color: var(--accent-cyan);">Parallel Computing</td>
@@ -1695,7 +1695,7 @@
                                     <td>Bounded <code>std::thread</code> worker pool, 5 measured repetitions + warm-up, statistical median</td>
                                     <td>Numerical difference &le; 1.0 &times; 10&minus;8 &deg;C vs serial execution</td>
                                     <td>Deterministic order, bit-for-bit invariance (&Delta;T = 0.0 &deg;C), sub-linear scaling</td>
-                                    <td><span class="metric-pill pill-success">VERIFIED PASS</span></td>
+                                    <td><span class="metric-pill pill-success" title="Last recorded verification run: Nov 18, 2026">VERIFIED PASS &bull; Nov 18, 2026</span></td>
                                 </tr>
                                 <tr>
                                     <td style="font-weight: 700; color: var(--accent-cyan);">Hardware Subsystem</td>
@@ -1703,7 +1703,7 @@
                                     <td>Tri-device polymorphic mock adapters (STM32H7, Artix-7, FT2232H), live telemetry streaming</td>
                                     <td>Injected timeout fault handling and automated Test-Logic-Reset (TLR) recovery</td>
                                     <td>Real-time strip charts, bus arbitration, robust fault recovery cycle</td>
-                                    <td><span class="metric-pill pill-success">VERIFIED PASS</span></td>
+                                    <td><span class="metric-pill pill-success" title="Last recorded verification run: Nov 18, 2026">VERIFIED PASS &bull; Nov 18, 2026</span></td>
                                 </tr>
                                 <tr>
                                     <td style="font-weight: 700; color: var(--accent-cyan);">Neural Optimization</td>
@@ -1711,7 +1711,7 @@
                                     <td>Exact manual chain-rule partial derivatives (zero autograd), simultaneous SGD optimizer</td>
                                     <td>Central difference check (&epsilon;=10&minus;6) max discrepancy &le; 1.0 &times; 10&minus;5</td>
                                     <td>Peak gradient error = 1.61 &times; 10&minus;10 &ll; 10&minus;5, loss J &rarr; 10&minus;20</td>
-                                    <td><span class="metric-pill pill-success">VERIFIED PASS</span></td>
+                                    <td><span class="metric-pill pill-success" title="Last recorded verification run: Nov 18, 2026">VERIFIED PASS &bull; Nov 18, 2026</span></td>
                                 </tr>
                                 <tr>
                                     <td style="font-weight: 700; color: var(--accent-cyan);">Export & Diagnostics</td>
@@ -1719,7 +1719,7 @@
                                     <td>CSV generation for all analytical modules, live ring-buffer event logging, standalone packaging</td>
                                     <td>All files exportable, self-contained single directory deployment</td>
                                     <td>Instant client-side CSV downloads, live C++ terminal diagnostics</td>
-                                    <td><span class="metric-pill pill-success">VERIFIED PASS</span></td>
+                                    <td><span class="metric-pill pill-success" title="Last recorded verification run: Nov 18, 2026">VERIFIED PASS &bull; Nov 18, 2026</span></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -2015,7 +2015,7 @@
                                 &bull; Root Executables: Launch.exe (Win32 GUI Launcher) & workbench_server.exe (C++ Backend)<br>
                                 &bull; Build Script: build.bat (One-click automated CMake + MSVC build)<br>
                                 &bull; Complete Documentation: docs/ (Architecture, Data Provenance, Performance, Hardware, Backprop)<br>
-                                &bull; Test Suite: 5/5 CTest verification suites passing with 100% success rate
+                                &bull; Test Suite: 5/5 CTest verification suites passing with 100% success rate (Last run: Nov 18, 2026)
                             </div>
                         </div>
                     </div>
@@ -2079,7 +2079,7 @@
                                 <span class="metric-value">IEEE-754 Standard Double (64-bit)</span>
                             </div>
                             <div class="metric-row">
-                                <span class="metric-label" title="In-Process C++ Socket-Bind: ~1.07 ms | Process Spawn: ~259 ms | UI Ready: ~680 ms">Server Socket-Bind Latency</span>
+                                <span class="metric-label" title="In-Process C++ Socket-Bind: 1.07 ms | Process Spawn: 30.4 ms | UI Ready: 882 ms (Navigation Timing API)">Server Socket-Bind Latency</span>
                                 <span class="metric-value" id="set-launch-latency">-- ms</span>
                             </div>
                         </div>

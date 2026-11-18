@@ -37,8 +37,9 @@ The implementation delivers:
 | **C++ Compiler** | MSVC 19.51.36247 (Visual Studio 2026 x64) | Macro `_MSC_VER` |
 | **Optimization Flags** | `/W4 /EHsc /utf-8 /permissive- /O2 /Oi /Ot /Gy /MT` | MSVC Toolchain Definition |
 | **Server Socket-Bind Latency (In-Process)** | $1.07 \text{ ms}$ | Automated C++ code measurement (`std::chrono::steady_clock` to TCP listen) |
-| **Process-Spawn to HTTP Health Ready** | $\approx 260 \text{ ms}$ | Manually measured (`CreateProcessW` + Winsock HTTP 200 OK polling) |
-| **End-to-End Browser UI Ready** | $\approx 680 \text{ ms}$ | Manually measured (Browser Navigation Timing: navigationStart to DOM ready) |
+| **Process-Spawn to HTTP Health Ready** | $30.4 \text{ ms}$ | Empirically measured (`performance.now()` process spawn + Winsock HTTP 200 OK polling, 3 runs: 25.3–32.7 ms) |
+| **End-to-End Browser UI Ready** | $882 \text{ ms}$ | Empirically measured (Browser Navigation Timing via CDP: `domContentLoadedEventEnd - navigationStart`; screenshot in `results/plots/startup_timing_measured.png`) |
+| **Total Cold Launch-to-Ready UI** | $\approx 913 \text{ ms}$ | Full end-to-end launch latency from process invocation to interactive WebGL interface (< 1 second) |
 
 ---
 

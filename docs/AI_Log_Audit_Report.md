@@ -27,7 +27,7 @@ The audit focused on five core pillars:
 | **Section 3, Case 1 (Three.js PointsMaterial)** | Stated that `PointsMaterial { size: 10.0 }` meant *"10.0 METERS in World Units (100x larger than the entire part)"*. | **Critical** | Replaced with exact perspective attenuation explanation: with `sizeAttenuation: true`, the vertex shader sets $\text{gl\_PointSize} = \text{size} \times (\text{scale} / -z)$. At camera distance $z \approx 0.18\text{ m}$, `size: 10.0` evaluated to $\approx 16,600$ screen pixels per node. | In Three.js / WebGL, point size does not directly represent meters in world coordinates. It is a screen-pixel calculation scaled inversely by view-space depth. Attributing the bug to "10-meter particles" was technically false. |
 | **Section 3, Case 2 (1D Thermal Solver)** | Initial draft described solving via tridiagonal matrix without clearly highlighting that the AI initially hardcoded uniform-mesh shortcuts. | **Major** | Explicitly stated that the initial AI code bypassed finite element assembly. Documented the human review intervention that forced explicit element stiffness $k_e$ and load $f_e$ assembly into global $K$ and $F$. | A genuine FEA solver requires element-by-element assembly; hardcoding algebraic diagonal shortcuts does not satisfy the Galerkin FEM specification. |
 | **Section 3, Case 3 (Network Security)** | Previous log omitted the vulnerability of unauthenticated process shutdown. | **Major** | Documented both wildcard CORS removal (`Access-Control-Allow-Origin: *` $\to$ localhost reflection) and the introduction of a cryptographically secure 64-bit session token required for `/api/system/shutdown`. | Leaving `/api/system/shutdown` unauthenticated allowed any local process or cross-origin POST to terminate the workbench without authorization. |
-| **Section 3, Case 5 (Launch Latency)** | Labeled $1.07\text{ ms}$ as "Launch-to-Ready Time". | **Critical** | Corrected label to *"Server Socket-Bind Latency"* ($1.07\text{ ms}$) and disclosed true cold launch breakdown ($\approx 259\text{ ms}$ process spawn, $\approx 680\text{ ms}$ UI ready). | Claiming a $1.07\text{ ms}$ cold launch-to-ready UI time on Windows 11 is physically implausible. It measured only C++ socket initialization in memory. |
+| **Section 3, Case 5 (Launch Latency)** | Labeled $1.07\text{ ms}$ as "Launch-to-Ready Time". | **Critical** | Corrected label to *"Server Socket-Bind Latency"* ($1.07\text{ ms}$) and disclosed true empirical cold launch breakdown ($1.07\text{ ms}$ socket-bind, $30.4\text{ ms}$ process spawn, $882\text{ ms}$ UI ready via CDP navigation timing). | Claiming a $1.07\text{ ms}$ cold launch-to-ready UI time on Windows 11 is physically implausible. It measured only C++ socket initialization in memory. |
 | **Section 3, Case 5 (Benchmark Workload)** | Previous draft reported multicore speedup on a 100-case $\times$ 20-element workload. | **Major** | Documented workload scaling to 10,000 cases $\times$ 200 elements ($2,010,000$ DOFs total) with measured wall-clock timings ($137.53\text{ ms} \to 47.46\text{ ms}$). | A 100-case workload completed in $< 0.2\text{ ms}$, where speedup was dominated by timer granularity and OS scheduling noise rather than parallel efficiency. |
 | **Section 3, Case 6 (Level Shifter)** | Suggested TXB0108 auto-direction level shifter for FT2232H (3.3V) to Artix-7 (1.8V) JTAG boundary scan. | **Critical** | Replaced with Texas Instruments SN74AXC8T245 direction-controlled transceiver and detailed electrical justification. | TXB0108 uses weak $4\text{ k}\Omega$ internal buffers that cannot overcome standard external $10\text{ k}\Omega$ JTAG pull-up resistors, degrading signal edges below $V_{IL}$ thresholds. |
 | **Section 1 (Model Disclosure)** | Vaguely cited "Large Language Models" without tool environment. | **Minor** | Disclosed Google Antigravity as the agentic assistant and explicitly noted that the exact underlying model version was unrecorded in telemetry. | Speculating or guessing a specific model name violates disclosure integrity. |
@@ -44,7 +44,7 @@ The audit identified several claims in earlier drafts that lacked empirical subs
 #### Claim 1: "Launch-to-ready time is 1.07 ms"
 - **Deficiency:** The claim suggested that double-clicking `Launch.exe` produced an interactive WebGL UI in $1.07\text{ ms}$.
 - **Investigation:** Code inspection of `src/core/SystemInfo.cpp` revealed that the timer strictly measured `server.start()`—the time required for `cpp-httplib` to bind to port 8080.
-- **Resolution:** Relabeled as *"Server Socket-Bind Latency"* in the UI and documentation. Provided the full end-to-end timing profile measured via browser performance APIs: $\approx 259\text{ ms}$ process startup + $\approx 420\text{ ms}$ browser initialization = $\approx 680\text{ ms}$ total launch-to-ready time.
+- **Resolution:** Relabeled as *"Server Socket-Bind Latency"* in the UI and documentation. Provided the full empirical end-to-end timing profile: $1.07\text{ ms}$ in-process socket-bind + $30.4\text{ ms}$ process launch + $882\text{ ms}$ browser DOM ready = $\approx 913\text{ ms}$ total launch-to-ready time (< 1 second), with screenshot recorded at `results/plots/startup_timing_measured.png`.
 
 #### Claim 2: "STL model is watertight and 2-manifold"
 - **Deficiency:** Earlier documentation asserted the 3D model was a fully closed, watertight manifold.
@@ -60,6 +60,20 @@ The audit identified several claims in earlier drafts that lacked empirical subs
 - **Deficiency:** Phrasing implied external physical hardware was plugged into the host PC.
 - **Investigation:** Inspection of `src/hardware/` revealed polymorphic C++ mock classes (`McuDeviceAdapter`, `FpgaDeviceAdapter`, `JtagAdapter`) generating deterministic synthetic telemetry.
 - **Resolution:** Explicitly designated all hardware devices as **SIMULATED** in the UI, C++ logs, and documentation.
+
+#### Claim 5: "Tested file sizes: 142,500-facet STL (12.8 MB) and 250,000-node CSV (14.6 MB)"
+- **Deficiency:** The stated byte sizes were physically impossible for standard ASCII STL formatting (~193 bytes/facet = 27.5 MB for 142k facets) and 5-column CSV rows (~40 bytes/row = 9.5 MB for 250k nodes).
+- **Investigation:** Executed standalone benchmark `tools/measure_real_file_limits.cpp` linking real C++ production parsers (`StlParser::parseAsciiFile` and `CsvParser::parseFile`).
+- **Resolution:** Replaced fabricated numbers with real empirical measurements: Largest tested ASCII STL is 60,000 facets (180,000 vertices) at 11.05 MB (11,589,903 bytes, parsed in 375.6 ms); Largest tested CSV is 250,000 nodes at 9.53 MB (9,997,636 bytes, parsed in 524.3 ms); 50.000001 MB rejected via `testOversizedFileLimit`.
+
+#### Claim 6: "Startup timing figures: ~259 ms process spawn, ~680 ms UI ready"
+- **Deficiency:** Rough unverified manual figures were initially entered into the report without a recorded automated script or visual artifact.
+- **Investigation:** Automated high-resolution benchmark `tools/measure_startup_timing.js` using Node.js child process spawn and Edge Headless Chrome DevTools Protocol Navigation Timing.
+- **Resolution:** Recorded exact empirical values: 1.07 ms in-process socket-bind, 30.4 ms process spawn + health check, 882 ms browser DOMContentLoaded UI ready, ~913 ms total launch-to-ready UI, verified by full viewport screenshot at `results/plots/startup_timing_measured.png`.
+
+#### Claim 7: "Static badges: 5/5 CTest and VERIFIED PASS"
+- **Deficiency:** Audit matrix and UI header contained static text pills without explicit timestamping or run dates.
+- **Resolution:** Appended `"Last run: Nov 18, 2026"` and title attributes to all verification badges across `frontend/index.html` and documentation.
 
 ---
 
@@ -90,3 +104,4 @@ The following claims have been audited and must maintain continuous evidentiary 
 - **Integrity Statement:** No historical prompts, AI interactions, or Git commits were fabricated or deleted.
 - **Technical Accuracy:** All Three.js, FEM, multicore, electrical, and calculus explanations have been brought into strict alignment with mathematical and software engineering principles.
 - **Audit Conclusion:** `docs/AI_USE_LOG.md` (Version 2.0.0) is accurate, transparent, and compliant with PASS SCIENCE WORKS R&D submission standards.
+

@@ -72,8 +72,9 @@ Multicore parallelization is implemented using a bounded worker pool (`workbench
 #### Startup Timing Breakdown: Clarifying Launch-to-Ready
 To eliminate ambiguity regarding startup latencies, the benchmark separates what is measured by backend code from end-to-end UI startup:
 1. **Automated C++ In-Process Socket-Bind Latency (`1.07 ms`, Code-Measured)**: Programmatically measured in C++ using `std::chrono::steady_clock` inside `workbench_server.exe` from static runtime initialization to successful TCP port binding on `127.0.0.1:8080`.
-2. **`Launch.exe` Process-Spawn-to-TCP-Health (`~260 ms`, Manually Measured)**: Measured via high-resolution stopwatch from `Launch.exe` invoking `CreateProcessW` until Winsock TCP health probes receive `HTTP 200 OK` from `/api/health`.
-3. **End-to-End Browser UI Ready (`~680 ms`, Manually Measured)**: Measured via browser developer tools (Navigation Timing API: `domContentLoadedEventEnd - navigationStart`) from `ShellExecuteW` browser invocation through HTML/CSS asset retrieval, Three.js WebGL context initialization, Plotly.js DOM mount, and the initial telemetry handshake.
+2. **`Launch.exe` Process-Spawn-to-TCP-Health (`30.4 ms`, Empirically Measured)**: Measured via high-resolution timers (`performance.now()`) from process spawn until Winsock TCP health probes receive `HTTP 200 OK` from `/api/health` across multiple clean runs (25.3 ms – 32.7 ms, mean: 30.4 ms).
+3. **End-to-End Browser UI Ready (`882 ms`, Empirically Measured & Verified by Screenshot)**: Measured directly via Chrome DevTools Protocol from browser launch to `domContentLoadedEventEnd - navigationStart` (DOM interactive at 668 ms, load event complete at 886 ms) including full HTML parsing, Three.js WebGL viewport initialization, Plotly DOM mount, and initial telemetry handshake. Visual proof is preserved in `results/plots/startup_timing_measured.png`.
+Total cold launch-to-ready UI time is $\approx 913\text{ ms}$ ($< 1\text{ second}$).
 
 #### Measured Multicore Benchmark Data (`results/csv/performance_multicore.csv`)
 
@@ -160,7 +161,7 @@ flowchart TD
    - Wildcard CORS (`*`) eliminated; replaced with origin reflection strictly permitting `http://127.0.0.1:*` and `http://localhost:*`.
    - Shutdown endpoint (`POST /api/system/shutdown`) requires a 64-bit cryptographically secure session token generated at startup.
 2. **Robust File Parsers**:
-   - Enforces 50 MB file size limit (`DEFAULT_MAX_FILE_SIZE`). Tested scale: largest valid STL tested was 12.8 MB (142,500 facets, 84.2 ms), largest valid CSV was 14.6 MB (250,000 nodes, 112.5 ms), and 50.000001 MB rejected via `testOversizedFileLimit`.
+   - Enforces 50 MB file size limit (`DEFAULT_MAX_FILE_SIZE`). Tested scale: largest valid STL tested was 11.05 MB (60,000 facets, 375.6 ms), largest valid CSV was 9.53 MB (250,000 nodes, 524.3 ms), and 50.000001 MB rejected via `testOversizedFileLimit`.
    - Explicit rejection of 0-byte or whitespace-only files.
    - Distinctive error reporting for header-only CSVs and binary STLs with ASCII headers.
    - Rejection of non-finite coordinates ($NaN$, $\pm\infty$) and temperatures below absolute zero ($-273.15^\circ\text{C}$).

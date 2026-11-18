@@ -227,10 +227,10 @@ The candidate acted as lead systems architect, reviewer, and verification audito
   - Execution time: T1 = 137.53 ms, T2 = 81.21 ms (1.69x), T3 = 57.78 ms (2.38x), T4 = 47.46 ms (2.90x).
   ```
 - **Technical Audit & What Was Actually Wrong:**
-  1. The AI previously displayed $1.07\text{ ms}$ labeled as "Launch-to-Ready Time". This was technically inaccurate: $1.07\text{ ms}$ was merely the in-process duration for `cpp-httplib` to bind to port 8080. A cold launch from double-clicking `Launch.exe` to an interactive browser window takes $\approx 680\text{ ms}$ on Windows.
+  1. The AI previously displayed $1.07\text{ ms}$ labeled as "Launch-to-Ready Time". This was technically inaccurate: $1.07\text{ ms}$ was merely the in-process duration for `cpp-httplib` to bind to port 8080. A cold launch from double-clicking `Launch.exe` to an interactive browser window takes $\approx 913\text{ ms}$ on Windows (30.4 ms process spawn + 882 ms browser DOM ready).
   2. The initial benchmark used 100 cases $\times$ 20 elements, which completed in under $0.2\text{ ms}$, rendering speedup numbers susceptible to timer noise and operating system thread scheduling jitter.
 - **My Edit:**
-  1. Relabeled the $1.07\text{ ms}$ metric in `src/core/SystemInfo.cpp` and the UI to *"Server Socket-Bind Latency"* and documented the full breakdown ($1.07\text{ ms}$ socket bind, $\approx 259\text{ ms}$ process launch, $\approx 680\text{ ms}$ UI ready).
+  1. Relabeled the $1.07\text{ ms}$ metric in `src/core/SystemInfo.cpp` and the UI to *"Server Socket-Bind Latency"* and documented the empirical breakdown ($1.07\text{ ms}$ socket bind, $30.4\text{ ms}$ process launch, $882\text{ ms}$ UI ready, verified by screenshot in `results/plots/startup_timing_measured.png`).
   2. Scaled the benchmark workload in `src/performance/PerformanceBenchmark.cpp` to $10,000$ cases $\times$ $200$ elements ($2,010,000$ DOFs total), producing meaningful execution times ($137.53\text{ ms} \to 47.46\text{ ms}$) that dwarf synchronization overhead.
   3. Re-ran benchmarks across 5 measured repetitions + warm-up, recording statistical medians into `results/csv/performance_multicore.csv` and regenerating `results/plots/speedup_vs_workers.svg`.
 - **Validation:**
