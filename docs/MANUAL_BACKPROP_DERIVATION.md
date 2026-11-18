@@ -164,4 +164,5 @@ J_1 &= \frac{1}{2} (-1.171189717)^2 = \mathbf{0.685842168} < J_0 \ (1.182541818)
 - **Final Loss ($J_{100}$):** $1.70 \times 10^{-20}$ ($\hat{y}_{100} = 2.000000$)
 - **Peak Gradient Check Error Across All 100 Steps:** $1.61 \times 10^{-10} \le 1.0 \times 10^{-5}$ (**PASS**)
 - **Implementation Guarantee:** Zero autograd libraries; 100% ISO C++17 manual chain-rule implementation.
+- **Handwritten Appendix:** An authentic scanned 2-page handwritten derivation of all partial derivatives and Taylor truncation error proofs is preserved in `docs/handwritten_backprop.pdf`.
 

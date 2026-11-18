@@ -72,6 +72,11 @@ class ReportsExportsController {
         document.getElementById('btn-rep-doc-pdf')?.addEventListener('click', () => {
             this.triggerDownload(window.api.getReportDocumentUrl('REPORT.pdf'), 'REPORT.pdf');
         });
+
+        // 10. Handwritten Backprop Derivation PDF
+        document.getElementById('btn-rep-doc-handwritten')?.addEventListener('click', () => {
+            this.triggerDownload(window.api.getReportDocumentUrl('handwritten_backprop.pdf'), 'handwritten_backprop.pdf');
+        });
     }
 
     initTabs() {

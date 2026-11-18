@@ -129,6 +129,7 @@ $$\frac{\partial J}{\partial w} = \delta \cdot x, \quad \frac{\partial J}{\parti
 - Final Loss (Step 100): **$1.70262 \times 10^{-20}$** ($\hat{y} = 2.000000000$)
 - Maximum Gradient Verification Error across all 100 steps: **$1.60723 \times 10^{-10}$**, confirming strict compliance with the $1.0 \times 10^{-5}$ tolerance.
 - Convergence Mechanism: Because the model has 4 adjustable parameters to fit 1 scalar target point, the optimization landscape has an exact global minimum at loss $0.0$, achieved with zero oscillation.
+- Handwritten Verification Appendix: Full first-principles chain rule derivations and Taylor expansion error proofs are preserved in the authentic 2-page appendix `docs/handwritten_backprop.pdf` (and `docs/MANUAL_BACKPROP_DERIVATION.md`).
 
 ---
 
